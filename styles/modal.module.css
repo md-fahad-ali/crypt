@@ -1,0 +1,18 @@
+.modalMain {
+  position: absolute;
+  padding: 30px;
+  width: 30%;
+  background-color: #ffffffe8;
+  box-shadow: 0px 0px 18px 0px #80808059;
+}
+.clsBtn {
+  float: right;
+  color: black;
+}
+.clsBtn > button {
+  background-color: transparent;
+  border: none;
+  font-weight: bold;
+}
+.modalContent {
+}
