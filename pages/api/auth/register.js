@@ -29,7 +29,7 @@ const sigSchema = Joi.object({
   address: Joi.string().allow(null).empty(""),
   email: Joi.string().required(),
   firstname: Joi.string().required(),
-  hash: Joi.string().required(),
+  hash: Joi.string().allow(null).empty(""),
   lastname: Joi.string().required(),
   password: Joi.string().allow(null).empty(""),
   sig: Joi.string().allow(null).empty(""),
@@ -93,7 +93,7 @@ passport.deserializeUser(function (user, done) {
 
 handler.get(parseForm, function (req, res) {
   const hash = uuid();
-  res.json({ session: req?.session, csrf: req.csrfToken(), hash: hash });
+  res.json({ session: req?.session, csrf: req?.csrfToken(), hash: hash });
 });
 
 handler
@@ -104,7 +104,7 @@ handler
     }
     next();
   })
-  .post(parseForm, csrfProtection, async (req, res, next) => {
+  .post(parseForm,csrfProtection,async (req, res, next) => {
     const {
       address,
       sig,
@@ -115,69 +115,125 @@ handler
       type,
       email,
       password,
+      fromSig,
     } = req.body;
     console.log("I am exicuting from server side /api/metamask");
-    // res.status(200).json(req.body);
+    console.log(req.body);
+    if (fromSig == true) {
+      const emailFind = await db.select().from("auth").where("email", email);
 
-    const emailFind = await db.select().from("auth").where("email", email);
+      const userName = await await db
+        .select()
+        .from("auth")
+        .where("username", username);
+      const wallet_address = await await db
+        .select()
+        .from("auth")
+        .where("wallet_address", address);
 
-    const userName = await await db
-      .select()
-      .from("auth")
-      .where("username", username);
-    const wallet_address = await await db
-      .select()
-      .from("auth")
-      .where("wallet_address", address);
-
-    if (emailFind.length != 0) {
-      res.status(200).json("This email is already used");
-    } else if (userName.length != 0) {
-      res.status(200).json("This username is already used");
-    } else if (wallet_address.length != 0) {
-      res.status(200).json("This username is already used");
-    } else {
-      try {
-        const data = await db
-          .insert({
-            username: username,
-            first_name: firstname,
-            last_name: lastname,
-            email: email,
-            wallet_address: address,
-            type: type,
-            password: password,
-          })
-          .into("auth");
-        console.log(data);
-        passport.authenticate("custom", (err, user, info) => {
-          if (err) {
-            return next(err);
-          }
-
-          if (!user) {
-            return res.status(500).json(info);
-          }
-
-          req.logIn(user, async function (err) {
+      console.log(userName.length);
+      if (emailFind.length != 0) {
+        res.status(500).json({ error: "This email is already used" });
+      } else if (userName.length == 1) {
+        res.status(500).json({ error: "This username is already used" });
+      } else if (wallet_address.length != 0) {
+        res.status(500).json({ error: "This wallet is already used" });
+      } else {
+        try {
+          const data = await db
+            .insert({
+              username: username,
+              first_name: firstname,
+              last_name: lastname,
+              email: email,
+              wallet_address: address,
+              type: type,
+              password: password,
+            })
+            .into("auth");
+          console.log(data);
+          passport.authenticate("custom", (err, user, info) => {
             if (err) {
               return next(err);
             }
 
-            res.status(201).json({
-              message: {
-                address,
-                sig,
-                hash,
-                info,
-                isAuth: req.isAuthenticated(),
-              },
+            if (!user) {
+              return res.status(500).json(info);
+            }
+
+            req.logIn(user, async function (err) {
+              if (err) {
+                return next(err);
+              }
+
+              res.status(201).json({
+                message: {
+                  address,
+                  sig,
+                  hash,
+                  info,
+                  isAuth: req.isAuthenticated(),
+                },
+              });
             });
-          });
-        })(req, res, next);
-      } catch (error) {
-        console.log(error);
-        res.status(200).json(JSON.stringify(error));
+          })(req, res, next);
+        } catch (error) {
+          console.log(error);
+          res.status(200).json(JSON.stringify(error));
+        }
+      }
+    } else {
+
+
+      const emailFind = await db.select().from("auth").where("email", email);
+
+      const userName = await await db
+        .select()
+        .from("auth")
+        .where("username", username);
+      if (emailFind.length != 0) {
+        res.status(500).json({ error: "This email is already used" });
+      } else if (userName.length == 1) {
+        res.status(500).json({ error: "This username is already used" });
+      } else {
+        try {
+          const data = await db
+            .insert({
+              username: username,
+              first_name: firstname,
+              last_name: lastname,
+              email: email,
+              type: type,
+              password: password,
+            })
+            .into("auth");
+          console.log(data);
+          passport.authenticate("custom", (err, user, info) => {
+            if (err) {
+              return next(err);
+            }
+
+            if (!user) {
+              return res.status(500).json(info);
+            }
+
+            req.logIn(user, async function (err) {
+              if (err) {
+                return next(err);
+              }
+
+              res.status(201).json({
+                message: {
+                  info,
+                  isAuth: req.isAuthenticated(),
+                },
+              });
+            });
+          })(req, res, next);
+        } catch (error) {
+          console.log(error);
+          res.status(200).json(JSON.stringify(error));
+        }
       }
     }
   });

@@ -20,13 +20,14 @@ import { uuid } from "uuidv4";
 import Web3Button from "../components/Web3Button";
 
 function Register(props) {
-  console.log(props);
+  // console.log(props);
   const [checked, setChecked] = React.useState(true);
   const [msg, setMsg] = useState();
   const [show, setShow] = useState(false);
   const [fromSig, setFromSig] = useState(false);
   const [sig, setSig] = useState("");
   const [address, setAddress] = useState("");
+  const [err, setError] = useState("");
 
   async function submitForm(e) {
     e.preventDefault();
@@ -56,14 +57,27 @@ function Register(props) {
         }
       );
       // setMsg(result.data);
-      console.log(result.data);
+      console.log(result?.data);
+      setErrors("")
+      if (result.status == 200 && result?.data?.isAuth) {
+        console.log(true);
+        router.push("/")
+      }else{
+        setMsg(result.data)
+      }
     } catch (error) {
-      // console.log(error);
+      setError(
+        error?.response?.request?.response
+          ?.split(":")[1]
+          ?.split("}")[0]
+          ?.split('"')[1]
+      );
     }
   }
 
   async function submitWeb3Form(e) {
     e.preventDefault();
+    
     try {
       const result = await axios.post(
         "/api/auth/register",
@@ -77,7 +91,8 @@ function Register(props) {
           type: e.target.type.value,
           sig: sig,
           hash: props?.message_key,
-          address: address,
+          address: address || "",
+          fromSig: fromSig,
         },
         {
           withCredentials: true,
@@ -88,30 +103,30 @@ function Register(props) {
           },
         }
       );
+      console.log(result?.data);
+      if (result.status == 200 && result?.data?.isAuth) {
+        router.push("/")
+      }else{
+        
+      }
       // setMsg(result.data);
-      console.log(result.data);
+      setError("")
     } catch (error) {
-      // console.log(error);
+      console.log(error);
+      setError(
+        error?.response?.request?.response
+          ?.split(":")[1]
+          ?.split("}")[0]
+          ?.split('"')[1]
+      );
     }
+    
   }
 
-  //Config of WalletConnect
+  
+
   const apiKey = process.env.NEXT_PUBLIC_API_KEY;
   const sec_key = props;
-
-  const chains = [arbitrum, mainnet, polygon];
-  const projectId = apiKey;
-
-  const { publicClient } = configureChains(chains, [
-    w3mProvider({ projectId }),
-  ]);
-  const wagmiConfig = createConfig({
-    autoConnect: true,
-    connectors: w3mConnectors({ projectId, chains }),
-    publicClient,
-  });
-
-  const ethereumClient = new EthereumClient(wagmiConfig, chains);
 
   return (
     <div className={styles.formBd}>
@@ -135,20 +150,26 @@ function Register(props) {
         >
           Sign Up
         </h1>
+        {err ? (
+          <>
+            <br />
+            <p className={"text-red-600"}>{err}</p>
+          </>
+        ) : (
+          ""
+        )}
         {!show ? (
           <div>
             <form>
-              <WagmiConfig config={wagmiConfig}>
-                <Web3Button
-                  lock_key={sec_key}
-                  setFromSig={setFromSig}
-                  setShow={setShow}
-                  setSig={setSig}
-                  setAddress={setAddress}
-                />
-              </WagmiConfig>
+              <Web3Button
+                lock_key={sec_key}
+                setFromSig={setFromSig}
+                setShow={setShow}
+                setSig={setSig}
+                setAddress={setAddress}
+              />
 
-              <Web3Modal
+              {/* <Web3Modal
                 projectId={projectId}
                 themeVariables={{
                   "--w3m-font-family": "Roboto, sans-serif",
@@ -156,7 +177,7 @@ function Register(props) {
                   "--w3m-background-color": "#CECECE",
                 }}
                 ethereumClient={ethereumClient}
-              />
+              /> */}
 
               <button
                 aria-label="Continue with Web1.0"
@@ -197,8 +218,8 @@ function Register(props) {
                 }
                 required
               ></input>
-
-              {fromSig ? (
+              <br />
+              {!fromSig ? (
                 <div>
                   <label className={"text-white float-left mt-4"}>
                     You password
@@ -212,6 +233,7 @@ function Register(props) {
                       "p-2 text-1xl border-violet-800 text-white bg-slate-900"
                     }
                   ></input>
+                  <br />
                 </div>
               ) : (
                 ""
@@ -342,8 +364,8 @@ export const getServerSideProps = async ({ req, res }) => {
     return {
       props: {
         message_key: meta_key || null,
-        data: test?.data.csrf,
-        all: test?.data?.session,
+        data: test?.data.csrf || null,
+        all: test?.data?.session || null,
         csrf: getCookie("_csrf", { req, res }) || {},
       },
     };

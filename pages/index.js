@@ -56,7 +56,7 @@ export default function Home(props) {
       const web3 = new Web3(window.ethereum);
 
       const message = "This is a message to be signed.";
-      const hash = web3.eth.accounts.hashMessage(message)
+      const hash = web3.eth.accounts.hashMessage(message);
       let accounts = await web3.eth.getAccounts();
       const signature = await web3.eth.accounts.sign(hash, accounts[0]);
 
@@ -154,43 +154,7 @@ export default function Home(props) {
   );
 }
 
-// export const getServerSideProps = async ({ req, res }) => {
-//   const result = await axios.get(
-//     `${req.headers["x-forwarded-proto"]}://${req.headers.host}/api/auth/login`,
-// {
-//   withCredentials: true,
-//   headers: {
-//     Cookie: req.headers.cookie,
-//   },
-// }
-//   );
-// const t = getCookie("_csrf", { req, res });
-// //console.log(t?.length || 0);
-// const ck = t?.length || 0;
-// if (ck == 0) {
-//   setCookie("_csrf", uuidv4(), {
-//     req,
-//     res,
-//     httpOnly: true,
-//     secure: process.env.NODE_ENV !== "development",
-//     maxAge: 60 * 1000,
-//     sameSite: "lax",
-//     path: "/",
-//   });
-//   console.log("cookie set");
-// }
-
-//   // console.log(res);
-//   return {
-//     props: {
-//       data: result?.data,
-
-//       csrf: getCookie("_csrf", { req, res }) || {},
-//     },
-//   };
-// };
-
-export const getServerSideProps = async ({ req, res }) => {
+export async function getServerSideProps({ req, res }) {
   const csrfToken = getCookie("_csrf", { req, res }) || "";
 
   if (!csrfToken) {
@@ -236,4 +200,4 @@ export const getServerSideProps = async ({ req, res }) => {
       props: {},
     };
   }
-};
+}

@@ -71,30 +71,7 @@ function Web3Button(props) {
         props.setFromSig(true)
         props.setAddress(fromAddress)
 
-        // try {
-        //   const result = await axios.post(
-        //     "/api/auth/metamask/register",
-        //     {
-        //       address: fromAddress,
-        //       sig: signature,
-        //       _csrf: props?.lock_key?.data,
-        //       hash: props?.lock_key?.message_key,
-        //     },
-        //     {
-        //       withCredentials: true,
-        //       headers: {
-        //         Accept: "application/json",
-        //         "Content-Type": "application/json",
-        //         "xsrf-token": props?.lock_key?.csrf,
-        //       },
-        //     }
-        //   );
-        //   console.log("From server");
-        //   console.info(result.data);
-          
-        // } catch (error) {
-        //   console.log(error);
-        // }
+        
 
         console.log("amake deka jasse");
       } else {

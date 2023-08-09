@@ -28,6 +28,7 @@ function Login(props) {
   const [fromSig, setFromSig] = useState(false);
   const [sig, setSig] = useState("");
   const [address, setAddress] = useState("");
+  const [error,setError] = useState("");
 
   async function submitForm(e) {
     e.preventDefault();
@@ -49,10 +50,15 @@ function Login(props) {
           },
         }
       );
-      // setMsg(result.data);
+      setError("");
+      if (result.status == 200 && result?.data?.isAuth) {
+        router.push("/")
+      }else{
+        setMsg(result.data)
+      }
       console.log(result.data);
     } catch (error) {
-      console.log(error);
+      setError(error?.response?.request?.response?.split(":")[1]?.split("}")[0]?.split('"')[1]);
     }
   }
 
@@ -124,17 +130,17 @@ function Login(props) {
         >
           Sign In
         </h1>
+        <br/><p className={"text-red-600"}>{error}</p>
         {!show ? (
           <div>
             <form>
-              <WagmiConfig config={wagmiConfig}>
+              
                 <LogWeb3Button
                   lock_key={sec_key}
                   fromSig={true}
                 />
-              </WagmiConfig>
-
-              <Web3Modal
+             
+              {/* <Web3Modal
                 projectId={projectId}
                 themeVariables={{
                   "--w3m-font-family": "Roboto, sans-serif",
@@ -142,7 +148,7 @@ function Login(props) {
                   "--w3m-background-color": "#CECECE",
                 }}
                 ethereumClient={ethereumClient}
-              />
+              /> */}
 
               <button
                 aria-label="Continue with Web1.0"
@@ -254,8 +260,8 @@ export const getServerSideProps = async ({ req, res }) => {
     return {
       props: {
         message_key: meta_key || null,
-        data: test?.data.csrf,
-        all: test?.data?.session,
+        data: test?.data.csrf || null,
+        all: test?.data?.session || null,
         csrf: getCookie("_csrf", { req, res }) || {},
       },
     };

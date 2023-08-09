@@ -39,6 +39,7 @@ passport.use(
   new CustomStrategy(async (req, done) => {
     const { email, password, fromSig, adress } = req.body;
     if (fromSig == true) {
+      console.log(fromSig);
       const web3 = new Web3("https://polygon-rpc.com");
       const message = `${process.env.NEXT_PUBLIC_MESSAGE} ${req?.body?.hash}`;
       try {
@@ -54,6 +55,7 @@ passport.use(
             return done(null, {
               info: result[0].email,
               name: `${result[0]?.first_name} ${result[0]?.last_name}`,
+              username:result[0].username,
             });
           }
         } else {
@@ -63,6 +65,7 @@ passport.use(
         return done(null, false, { info: "Wrong Signeture" });
       }
     } else {
+      console.log(fromSig);
       const result = await db.select().from("auth").where("email", email);
       console.log("result");
       // console.log(result[0]?.first_name);
@@ -113,7 +116,8 @@ handler.use((req, res, next) => {
 
     req.logIn(user, async function (err) {
       if (err) {
-        return next(err);
+        console.log(err);
+        // return next(err);
       }
 
       return res
@@ -123,9 +127,9 @@ handler.use((req, res, next) => {
   })(req, res, next);
 });
 
-handler.get(parseForm, function (req, res) {
+handler.get(parseForm,function (req, res) {
   const hash = uuid();
-  res.json({ session: req?.session, csrf: req.csrfToken(), hash: hash });
+  res.json({ session: req?.session, csrf: req?.csrfToken(), hash: hash });
 });
 
 export default handler;
