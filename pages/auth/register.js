@@ -58,7 +58,7 @@ function Register(props) {
           },
         }
       );
-      // setMsg(result.data);
+      
       router.push("/")
       console.log(result?.data?.message);
       setErrors("")
