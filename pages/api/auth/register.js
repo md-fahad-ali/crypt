@@ -96,15 +96,7 @@ handler.get(parseForm, function (req, res) {
   res.json({ session: req?.session, csrf: req?.csrfToken(), hash: hash });
 });
 
-handler
-  .use((req, res, next) => {
-    const { error } = sigSchema.validate(req.body);
-    if (error) {
-      return res.status(200).json({ error: error });
-    }
-    next();
-  })
-  .post(parseForm,csrfProtection,async (req, res, next) => {
+handler.post(parseForm,csrfProtection,async (req, res, next) => {
     const {
       address,
       sig,

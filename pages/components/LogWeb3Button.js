@@ -4,6 +4,7 @@ import { useWeb3Modal, useWeb3ModalEvents } from "@web3modal/react";
 import { useAccount, useBalance, useConnect } from "wagmi";
 import Image from "next/image";
 import axios from "axios";
+import { useRouter } from "next/router";
 
 function LogWeb3Button(props) {
   const { connector: activeConnector, isConnected, address } = useAccount();
@@ -11,6 +12,9 @@ function LogWeb3Button(props) {
   const [connected, setConnected] = useState(isConnected);
   const [sig, setSig] = useState(true);
   const [error, setError] = useState();
+  
+  const router = useRouter()
+
   const {
     data,
     isFetching,
@@ -100,7 +104,7 @@ function LogWeb3Button(props) {
               sig: signature,
               hash: props?.lock_key?.message_key,
               address: fromAddress,
-              fromSig:props?.fromSig
+              fromSig: props?.fromSig,
             },
             {
               withCredentials: true,
@@ -111,7 +115,12 @@ function LogWeb3Button(props) {
               },
             }
           );
-          // setMsg(result.data);
+          props?.setError("");
+          if (result?.data?.isAuth) {
+            router.push("/");
+          } else {
+            // setMsg(result.data);
+          }
           console.log(result.data);
         } catch (error) {
           console.log(error);
@@ -122,6 +131,7 @@ function LogWeb3Button(props) {
         setError("Please install MetaMask to sign messages.");
       }
     } catch (error) {
+      props?.setError(error?.response?.request?.response?.split(":")[1]?.split("}")[0]?.split('"')[1]);
       setError("Error while signing the message.");
       console.error(error);
     }
@@ -173,4 +183,3 @@ function LogWeb3Button(props) {
 }
 
 export default LogWeb3Button;
-

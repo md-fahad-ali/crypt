@@ -25,15 +25,15 @@ const corsOptions = {
 
 handler.use(cors(corsOptions));
 
-const sigSchema = Joi.object({
-  address: Joi.string().allow(null).empty(""),
-  email: Joi.string().allow(null).empty(""),
-  hash: Joi.string().allow(null).empty(""),
-  password: Joi.string().allow(null).empty(""),
-  sig: Joi.string().allow(null).empty(""),
-  _csrf: Joi.string().required(),
-  fromSig: Joi.boolean().required(),
-});
+// const sigSchema = Joi.object({
+//   address: Joi.string().allow(null).empty(""),
+//   email: Joi.string().allow(null).empty(""),
+//   hash: Joi.string().allow(null).empty(""),
+//   password: Joi.string().allow(null).empty(""),
+//   sig: Joi.string().allow(null).empty(""),
+//   _csrf: Joi.string().required(),
+//   fromSig: Joi.boolean().required(),
+// });
 
 passport.use(
   new CustomStrategy(async (req, done) => {
@@ -55,7 +55,7 @@ passport.use(
             return done(null, {
               info: result[0].email,
               name: `${result[0]?.first_name} ${result[0]?.last_name}`,
-              username:result[0].username,
+              username: result[0].username,
             });
           }
         } else {
@@ -86,48 +86,57 @@ passport.use(
 );
 
 passport.serializeUser(function (user, done) {
-  console.log(user);
+  // console.log(user);
   console.log(`from serialize ${user.info}`);
   done(null, user);
 });
 
 passport.deserializeUser(async function (id, done) {
-  console.log("deserializeUser (lookup) " + JSON.stringify(id.info));
-  const result = await db.select().from("auth").where("email", id.info);
-  console.log("info");
-  done(null, result);
+  try {
+    if (id?.info != undefined) {
+      console.log("deserializeUser (lookup) " + JSON.stringify(id?.info));
+      const result = await db.select().from("auth").where("email", id.info);
+      console.log("info");
+      done(null, result);
+      
+    }else{
+      done(null, id);
+    }
+
+  } catch (error) {
+    console.log(error);
+    done(null, id);
+  }
 });
 
-handler.use((req, res, next) => {
-  const { error } = sigSchema.validate(req.body);
-  if (error) {
-    return res.status(200).json({ error: error });
-  }
-  next();
-}).post(parseForm,csrfProtection,async function (req, res, next) {
-  passport.authenticate("custom", (err, user, info) => {
-    if (err) {
-      return next(err);
-    }
-
-    if (!user) {
-      return res.status(500).json(info);
-    }
-
-    req.logIn(user, async function (err) {
+handler.post(parseForm, csrfProtection, async function (req, res, next) {
+    passport.authenticate("custom", (err, user, info) => {
       if (err) {
-        console.log(err);
-        // return next(err);
+        return next(err);
       }
 
-      return res
-        .status(200)
-        .json({ info: info, data: req.session, isAuth: req.isAuthenticated() });
-    });
-  })(req, res, next);
-});
+      if (!user) {
+        return res.status(500).json(info);
+      }
 
-handler.get(parseForm,function (req, res) {
+      req.logIn(user, async function (err) {
+        if (err) {
+          console.log(err);
+          // return next(err);
+        }
+
+        return res
+          .status(200)
+          .json({
+            info: info,
+            data: req.session,
+            isAuth: req.isAuthenticated(),
+          });
+      });
+    })(req, res, next);
+  });
+
+handler.get(parseForm, function (req, res) {
   const hash = uuid();
   res.json({ session: req?.session, csrf: req?.csrfToken(), hash: hash });
 });

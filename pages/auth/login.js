@@ -19,6 +19,7 @@ import { getHash } from "@/lib/hash";
 import { uuid } from "uuidv4";
 import Web3Button from "../components/Web3Button";
 import LogWeb3Button from "../components/LogWeb3Button";
+import { useRouter } from "next/router";
 
 function Login(props) {
   console.log(props);
@@ -29,6 +30,7 @@ function Login(props) {
   const [sig, setSig] = useState("");
   const [address, setAddress] = useState("");
   const [error,setError] = useState("");
+  const router = useRouter()
 
   async function submitForm(e) {
     e.preventDefault();
@@ -51,14 +53,15 @@ function Login(props) {
         }
       );
       setError("");
-      if (result.status == 200 && result?.data?.isAuth) {
+      if (result?.data?.isAuth) {
         router.push("/")
       }else{
-        setMsg(result.data)
+        // setMsg(result.data)
       }
       console.log(result.data);
     } catch (error) {
-      setError(error?.response?.request?.response?.split(":")[1]?.split("}")[0]?.split('"')[1]);
+      console.log(error);
+      // setError(error?.response?.request?.response?.split(":")[1]?.split("}")[0]?.split('"')[1]);
     }
   }
 
@@ -130,7 +133,7 @@ function Login(props) {
         >
           Sign In
         </h1>
-        <br/><p className={"text-red-600"}>{error}</p>
+        {/* <br/><p className={"text-red-600"}>{error}</p> */}
         {!show ? (
           <div>
             <form>
@@ -138,6 +141,7 @@ function Login(props) {
                 <LogWeb3Button
                   lock_key={sec_key}
                   fromSig={true}
+                  setError={setError}
                 />
              
               {/* <Web3Modal

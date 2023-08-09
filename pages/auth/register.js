@@ -18,6 +18,7 @@ import { arbitrum, mainnet, polygon } from "wagmi/chains";
 import { getHash } from "@/lib/hash";
 import { uuid } from "uuidv4";
 import Web3Button from "../components/Web3Button";
+import { useRouter } from "next/router";
 
 function Register(props) {
   // console.log(props);
@@ -28,6 +29,7 @@ function Register(props) {
   const [sig, setSig] = useState("");
   const [address, setAddress] = useState("");
   const [err, setError] = useState("");
+  const router = useRouter()
 
   async function submitForm(e) {
     e.preventDefault();
@@ -57,13 +59,13 @@ function Register(props) {
         }
       );
       // setMsg(result.data);
-      console.log(result?.data);
+      router.push("/")
+      console.log(result?.data?.message);
       setErrors("")
-      if (result.status == 200 && result?.data?.isAuth) {
+      if ( result?.data?.message?.isAuth) {
         console.log(true);
-        router.push("/")
       }else{
-        setMsg(result.data)
+        // setMsg(result.data)
       }
     } catch (error) {
       setError(
@@ -103,8 +105,8 @@ function Register(props) {
           },
         }
       );
-      console.log(result?.data);
-      if (result.status == 200 && result?.data?.isAuth) {
+      console.log(result?.data?.message);
+      if (result?.data?.message?.isAuth) {
         router.push("/")
       }else{
         
