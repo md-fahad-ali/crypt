@@ -57,8 +57,7 @@ function Register(props) {
             "xsrf-token": props?.csrf,
           },
         }
-      );
-      
+      ); 
       router.push("/")
       console.log(result?.data?.message);
       setErrors("")
