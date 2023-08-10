@@ -1,5 +1,5 @@
 const db = require("knex")({
-  client: "better-sqlite3", // or 'better-sqlite3'
+  client: "better-sqlite3", 
   connection: {
     filename: "./cr.db",
   },

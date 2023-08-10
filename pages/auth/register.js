@@ -105,7 +105,7 @@ function Register(props) {
           },
         }
       );
-      console.log(result?.data?.message);
+      console.log(result?.data);
       if (result?.data?.message?.isAuth) {
         router.push("/")
       }else{

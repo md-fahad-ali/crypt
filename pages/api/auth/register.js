@@ -96,7 +96,9 @@ handler.get(parseForm, function (req, res) {
   res.json({ session: req?.session, csrf: req?.csrfToken(), hash: hash });
 });
 
-handler.post(parseForm,csrfProtection,async (req, res, next) => {
+handler.post(parseForm, csrfProtection ,async (req, res, next) => {
+  if (req.headers["x-invoke-path"] == "/api/auth/register") {
+    console.log(true);
     const {
       address,
       sig,
@@ -175,8 +177,6 @@ handler.post(parseForm,csrfProtection,async (req, res, next) => {
         }
       }
     } else {
-
-
       const emailFind = await db.select().from("auth").where("email", email);
 
       const userName = await await db
@@ -228,7 +228,10 @@ handler.post(parseForm,csrfProtection,async (req, res, next) => {
         }
       }
     }
-  });
+  } else {
+    next()
+  }
+});
 
 // handler
 // .use((req, res, next) => {

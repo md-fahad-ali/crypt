@@ -22,7 +22,7 @@ import LogWeb3Button from "../components/LogWeb3Button";
 import { useRouter } from "next/router";
 
 function Login(props) {
-  console.log(props);
+  // console.log(props);
   const [checked, setChecked] = React.useState(true);
   const [msg, setMsg] = useState();
   const [show, setShow] = useState(false);
@@ -110,6 +110,8 @@ function Login(props) {
   });
 
   const ethereumClient = new EthereumClient(wagmiConfig, chains);
+
+  
 
   return (
     <div className={styles.formBd}>

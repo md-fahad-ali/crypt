@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import Web3 from "web3";
 import { useWeb3Modal, useWeb3ModalEvents } from "@web3modal/react";
-import { useAccount, useBalance, useConnect } from "wagmi";
+import { useAccount, useBalance, useConnect, useDisconnect } from "wagmi";
 import Image from "next/image";
 import axios from "axios";
 import { useRouter } from "next/router";
@@ -34,6 +34,15 @@ function LogWeb3Button(props) {
     providerOptions: {},
   });
 
+  const { disconnect } = useDisconnect()
+  useEffect(() => {
+    console.log(web3Modal);
+    
+    disconnect();  
+    return () => {
+    }
+  }, [])
+  
   // console.log(props?.lock_key);
 
   const connectToWallet = async (e) => {

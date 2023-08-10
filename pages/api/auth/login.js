@@ -25,19 +25,24 @@ const corsOptions = {
 
 handler.use(cors(corsOptions));
 
-// const sigSchema = Joi.object({
-//   address: Joi.string().allow(null).empty(""),
-//   email: Joi.string().allow(null).empty(""),
-//   hash: Joi.string().allow(null).empty(""),
-//   password: Joi.string().allow(null).empty(""),
-//   sig: Joi.string().allow(null).empty(""),
-//   _csrf: Joi.string().required(),
-//   fromSig: Joi.boolean().required(),
-// });
+const sigSchema = Joi.object({
+  address: Joi.string().allow(null).empty(""),
+  email: Joi.string().allow(null).empty(""),
+  hash: Joi.string().allow(null).empty(""),
+  password: Joi.string().allow(null).empty(""),
+  sig: Joi.string().allow(null).empty(""),
+  _csrf: Joi.string().required(),
+  fromSig: Joi.boolean().required(),
+});
 
 passport.use(
   new CustomStrategy(async (req, done) => {
     const { email, password, fromSig, adress } = req.body;
+    const { error,value } = sigSchema.validate(req.body);
+    if (error) {
+      console.log(error);
+      return done(null, false, { info: "error" });
+    }
     if (fromSig == true) {
       console.log(fromSig);
       const web3 = new Web3("https://polygon-rpc.com");
@@ -49,6 +54,7 @@ passport.use(
             .select()
             .from("auth")
             .where("wallet_address", req?.body?.address);
+            // console.log(result);
           if (result.length != 1) {
             return done(null, false, { info: "You are not a valid user" });
           } else {
@@ -110,6 +116,8 @@ passport.deserializeUser(async function (id, done) {
 });
 
 handler.post(parseForm, csrfProtection, async function (req, res, next) {
+    console.log(req.body);
+    const { error, value } = sigSchema.validate(req.body);
     passport.authenticate("custom", (err, user, info) => {
       if (err) {
         return next(err);
