@@ -1,0 +1,19 @@
+services:
+- type: web
+  name: crypt
+  env: node
+  plan: starter
+  buildCommand: yarn; yarn build
+  startCommand: yarn start
+  autoDeploy: false
+  envVars:
+  - key: NODE_ENV
+    value: production
+  -key: CSRF_SECRET
+    value: wu02ue2ej23r9fe42#@%
+  -key: WEB_URL   
+    value: https://crypt.herokuapp.com
+  -key: NEXT_PUBLIC_API_KEY
+    value: 514616d8d2789c5612f64ee2a641c9d5
+  -key: NEXT_PUBLIC_MESSAGE
+    value: Welcome to the META Questboard, please sign this message to verify your identity. Your custom message is 
