@@ -67,6 +67,7 @@ passport.use(
           address: data,
           username: req?.body?.username,
           fullname: `${req?.body?.firstname} ${req?.body?.lastname}`,
+          email: req?.body?.email,
           type: req?.body?.type,
         });
       } else {
@@ -77,6 +78,7 @@ passport.use(
         address: null,
         username: req?.body?.username,
         fullname: `${req?.body?.firstname} ${req?.body?.lastname}`,
+        email: req?.body?.email,
         type: req?.body?.type,
       });
     }

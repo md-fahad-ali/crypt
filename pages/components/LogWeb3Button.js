@@ -34,14 +34,19 @@ function LogWeb3Button(props) {
     providerOptions: {},
   });
 
+
   const { disconnect } = useDisconnect()
+  
+ 
+
   useEffect(() => {
-    console.log(web3Modal);
+    
     
     disconnect();  
     return () => {
+      disconnect()
     }
-  }, [])
+  }, [disconnect])
   
   // console.log(props?.lock_key);
 

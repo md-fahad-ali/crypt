@@ -130,7 +130,7 @@ function Login(props) {
         </button>
         <h1
           className={
-            "text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white"
+            "text-xl text-white font-bold leading-tight tracking-tight md:text-2xl dark:text-white"
           }
         >
           Sign In

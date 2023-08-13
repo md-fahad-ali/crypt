@@ -146,7 +146,7 @@ function Register(props) {
         </button>
         <h1
           className={
-            "text-xl font-bold leading-tight tracking-tight text-gray-900 md:text-2xl dark:text-white"
+            "text-xl  font-bold leading-tight tracking-tight text-white md:text-2xl dark:text-white"
           }
         >
           Sign Up

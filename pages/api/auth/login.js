@@ -38,7 +38,7 @@ const sigSchema = Joi.object({
 passport.use(
   new CustomStrategy(async (req, done) => {
     const { email, password, fromSig, adress } = req.body;
-    const { error,value } = sigSchema.validate(req.body);
+    const { error, value } = sigSchema.validate(req.body);
     if (error) {
       console.log(error);
       return done(null, false, { info: "error" });
@@ -54,7 +54,7 @@ passport.use(
             .select()
             .from("auth")
             .where("wallet_address", req?.body?.address);
-            // console.log(result);
+          // console.log(result);
           if (result.length != 1) {
             return done(null, false, { info: "You are not a valid user" });
           } else {
@@ -62,6 +62,8 @@ passport.use(
               info: result[0].email,
               name: `${result[0]?.first_name} ${result[0]?.last_name}`,
               username: result[0].username,
+              type: result[0].type,
+              address: result[0].address,
             });
           }
         } else {
@@ -82,6 +84,9 @@ passport.use(
           return done(null, {
             info: result[0].email,
             name: `${result[0]?.first_name} ${result[0]?.last_name}`,
+            username: result[0].username,
+            type: result[0].type,
+            address: result[0].address,
           });
         } else {
           return done(null, false, { info: "Wrong email/password" });
@@ -104,11 +109,9 @@ passport.deserializeUser(async function (id, done) {
       const result = await db.select().from("auth").where("email", id.info);
       console.log("info");
       done(null, result);
-      
-    }else{
+    } else {
       done(null, id);
     }
-
   } catch (error) {
     console.log(error);
     done(null, id);
@@ -116,33 +119,31 @@ passport.deserializeUser(async function (id, done) {
 });
 
 handler.post(parseForm, csrfProtection, async function (req, res, next) {
-    console.log(req.body);
-    const { error, value } = sigSchema.validate(req.body);
-    passport.authenticate("custom", (err, user, info) => {
+  console.log(req.body);
+  const { error, value } = sigSchema.validate(req.body);
+  passport.authenticate("custom", (err, user, info) => {
+    if (err) {
+      return next(err);
+    }
+
+    if (!user) {
+      return res.status(500).json(info);
+    }
+
+    req.logIn(user, async function (err) {
       if (err) {
-        return next(err);
+        console.log(err);
+        // return next(err);
       }
 
-      if (!user) {
-        return res.status(500).json(info);
-      }
-
-      req.logIn(user, async function (err) {
-        if (err) {
-          console.log(err);
-          // return next(err);
-        }
-
-        return res
-          .status(200)
-          .json({
-            info: info,
-            data: req.session,
-            isAuth: req.isAuthenticated(),
-          });
+      return res.status(200).json({
+        info: info,
+        data: req.session,
+        isAuth: req.isAuthenticated(),
       });
-    })(req, res, next);
-  });
+    });
+  })(req, res, next);
+});
 
 handler.get(parseForm, function (req, res) {
   const hash = uuid();

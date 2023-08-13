@@ -3,7 +3,7 @@ import styles from "../../styles/modal.module.css";
 
 const Modal = ({ children, isOpen, toggle, closebtnShow }) => {
   const [isBrowser, setIsBrowser] = useState(false);
-
+  
   // Set isBrowser to true on the client-side
   useEffect(() => {
     setIsBrowser(true);
@@ -20,7 +20,7 @@ const Modal = ({ children, isOpen, toggle, closebtnShow }) => {
 
   return (
     <div className={styles.modalMain}>
-      <div className={styles.clsBtn} styles={{ display: closebtnShow }}>
+      <div className={styles.clsBtn} style={{ display: closebtnShow }}>
         <button onClick={toggle}>&#10005;</button>
       </div>
       <div className={styles.modalContent}>{children}</div>

@@ -15,11 +15,24 @@ const inter = Inter({ subsets: ["latin"] });
 
 export default function Home(props) {
   // console.log(web3);
-  // console.log(props);
+  // console.log(props?.data?.data[0]?.wallet_address || null);
 
   // For toogle
-  const [isModalOpen, setIsModalOpen] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setErr] = useState(false);
+  const [address, setAddress] = useState(
+    // props?.data?.data[0]?.wallet_address || null
+  );
+
+  const [ profileOpen, setProfileOpen ] = useState(false);
+
+  // const toggleProfile = () => {
+  //   setProfileOpen((profileOpen) => !profileOpen);
+  // };
+  const toggleProfile = () => {
+    console.log("Toggling profile!"); // Debugging line
+    setProfileOpen((profileOpen) => !profileOpen);
+  };
 
   const toggleModal = () => {
     setIsModalOpen((prevIsModalOpen) => !prevIsModalOpen);
@@ -32,44 +45,10 @@ export default function Home(props) {
   } else {
     try {
       router.push("/auth/login");
-    } catch (error) {}
-  }
-  // console.log(props);
-  useEffect(() => {
-    setUser(props?.data?.session?.passport?.user?.name);
-    if (props?.data?.session?.passport) {
-      console.log("yes");
-    } else {
-      console.log("no");
-    }
-    return () => {};
-  }, [props]);
-
-  async function web3Op() {
-    try {
-      // const web3 = new Web3(window.ethereum);
-      // await window.ethereum.enable();
-      // let accounts = await web3.eth.getAccounts();
-      // console.log(accounts[0]);
-      // let msg = web3.utils.utf8ToHex("Some data");
-      // let sig1 = await web3.eth.sign(msg, accounts[0]);
-      const web3 = new Web3(window.ethereum);
-
-      const message = "This is a message to be signed.";
-      const hash = web3.eth.accounts.hashMessage(message);
-      let accounts = await web3.eth.getAccounts();
-      const signature = await web3.eth.accounts.sign(hash, accounts[0]);
-
-      console.log(signature);
     } catch (error) {
       console.log(error);
     }
   }
-  const getAccount = async () => {
-    const account = await window.ethereum.request({ method: "eth_accounts" });
-    setAcc(account);
-    // console.log("account");
-  };
   useEffect(() => {
     const getAccount = async () => {
       try {
@@ -85,8 +64,19 @@ export default function Home(props) {
 
     getAccount();
   }, []);
-
-  // window.ethereum.request()
+  // console.log(props);
+  useEffect(() => {
+    setUser(props?.data?.session?.passport?.user);
+    if (address) {
+      setIsModalOpen(true);
+      console.log("yes");
+    } else {
+      setIsModalOpen(false);
+      console.log("no");
+    }
+    
+    return () => {};
+  }, [address, props]);
 
   return (
     <>
@@ -99,51 +89,18 @@ export default function Home(props) {
       <Nav
         user={props?.data?.session?.passport ? user : "default"}
         csrf={props}
+        acc={acc}
+        toggle={toggleProfile}
       />
       {props?.data?.session && (
         <main className={`${styles.main} ${inter.className}`}>
-          {acc?.length != 1 ? (
-            <Modal
-              isOpen={isModalOpen}
-              toggle={toggleModal}
-              closebtnShow={"none"}
-            >
-              <h1>Warning!</h1>
-              <br />
-              {error ? (
-                <div>
-                  <h3>Please install Metamask Extension</h3>
-                </div>
-              ) : (
-                <div>
-                  <p>{"Please connect your wallet"}</p>
-                  <button
-                    className={styles.cbtn}
-                    onClick={(e) => {
-                      web3Op();
-                    }}
-                  >
-                    Connect
-                  </button>
-                </div>
-              )}
-            </Modal>
+          
+
+          {props?.data?.session?.passport?.user?.type == "user" ? (
+            <div>I am user</div>
           ) : (
-            ""
+            <div>I am company</div>
           )}
-
-          <div>
-            <h1>Hello World</h1>
-            <p>Welcome {user}</p>
-
-            <button
-              onClick={(e) => {
-                getAccount();
-              }}
-            >
-              Get
-            </button>
-          </div>
 
           <footer>
             <p>copyright @2023</p>
@@ -178,8 +135,8 @@ export async function getServerSideProps({ req, res }) {
     const check = process.env.NODE_ENV == "development";
     const test = await axios.get(
       check
-        ? `${req.headers["x-forwarded-proto"]}://${req.headers.host}/api/auth/login`
-        : `${process.env.WEB_URL}/api/auth/login`,
+        ? `${req.headers["x-forwarded-proto"]}://${req.headers.host}/api`
+        : `${process.env.WEB_URL}/api`,
       {
         withCredentials: true,
         headers: {
@@ -187,6 +144,7 @@ export async function getServerSideProps({ req, res }) {
         },
       }
     );
+    console.log(test.data);
 
     return {
       props: {

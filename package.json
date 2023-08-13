@@ -28,6 +28,8 @@
     "eslint-config-next": "13.4.12",
     "eth-sig-util": "^3.0.1",
     "express-session": "^1.17.3",
+    "flowbite": "^1.8.1",
+    "flowbite-react": "^0.5.0",
     "hamburger-react": "^2.5.0",
     "joi": "^17.9.2",
     "knex": "^2.5.1",
