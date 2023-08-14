@@ -62,7 +62,7 @@ passport.use(
               info: result[0].email,
               name: `${result[0]?.first_name} ${result[0]?.last_name}`,
               username: result[0].username,
-              type: result[0].type,
+              // type: result[0].type,
               address: result[0].address,
             });
           }
@@ -85,7 +85,7 @@ passport.use(
             info: result[0].email,
             name: `${result[0]?.first_name} ${result[0]?.last_name}`,
             username: result[0].username,
-            type: result[0].type,
+            // type: result[0].type,
             address: result[0].address,
           });
         } else {

@@ -33,7 +33,7 @@ const sigSchema = Joi.object({
   lastname: Joi.string().required(),
   password: Joi.string().allow(null).empty(""),
   sig: Joi.string().allow(null).empty(""),
-  type: Joi.string().required(),
+  // type: Joi.string().required(),
   username: Joi.string().required(),
   _csrf: Joi.string().required(),
   fromSig: Joi.boolean().required(),
@@ -68,7 +68,7 @@ passport.use(
           username: req?.body?.username,
           fullname: `${req?.body?.firstname} ${req?.body?.lastname}`,
           email: req?.body?.email,
-          type: req?.body?.type,
+          // type: req?.body?.type,
         });
       } else {
         return done(null, false, { info: "Wrong Signeture" });
@@ -79,7 +79,7 @@ passport.use(
         username: req?.body?.username,
         fullname: `${req?.body?.firstname} ${req?.body?.lastname}`,
         email: req?.body?.email,
-        type: req?.body?.type,
+        // type: req?.body?.type,
       });
     }
   })
@@ -108,7 +108,7 @@ handler.post(parseForm, csrfProtection ,async (req, res, next) => {
       username,
       firstname,
       lastname,
-      type,
+      // type,
       email,
       password,
       fromSig,
@@ -143,7 +143,7 @@ handler.post(parseForm, csrfProtection ,async (req, res, next) => {
               last_name: lastname,
               email: email,
               wallet_address: address,
-              type: type,
+              // type: type,
               password: password,
             })
             .into("auth");
@@ -197,7 +197,7 @@ handler.post(parseForm, csrfProtection ,async (req, res, next) => {
               first_name: firstname,
               last_name: lastname,
               email: email,
-              type: type,
+              // type: type,
               password: password,
             })
             .into("auth");

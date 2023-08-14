@@ -11,6 +11,7 @@ import { Web3Modal } from "@web3modal/react";
 import { configureChains, createConfig, WagmiConfig } from "wagmi";
 import { arbitrum, mainnet, polygon } from "wagmi/chains";
 import "@/styles/globals.css";
+import 'react-toastify/dist/ReactToastify.css';
 
 const chains = [arbitrum, mainnet, polygon];
 const projectId = process.env.NEXT_PUBLIC_API_KEY;

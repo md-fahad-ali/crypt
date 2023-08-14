@@ -361,7 +361,7 @@ export const getServerSideProps = async ({ req, res }) => {
         },
       }
     );
-    console.log(test.data);
+    console.log(`${test.data?.csrf},${getCookie("_csrf", { req, res })}`);
     return {
       props: {
         message_key: meta_key || null,

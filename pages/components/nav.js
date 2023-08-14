@@ -11,9 +11,10 @@ import { DarkThemeToggle, Flowbite } from "flowbite-react";
 import { RxCross2 } from "react-icons/rx";
 import Web3 from "web3";
 import Profile from "./profile";
+import { ToastContainer, toast } from "react-toastify";
 
-const Nav = ({ user, csrf }) => {
-  // console.log(props);
+const Nav = ({ csrf }) => {
+  const user = csrf?.data?.data?.length !== undefined ? csrf?.data?.data[0] : "";
 
   const [isOpen, setIsOpen] = useState(false);
   const router = useRouter();
@@ -37,27 +38,13 @@ const Nav = ({ user, csrf }) => {
   // }
 
   useEffect(() => {
-    const getAccount = async () => {
-      try {
-        const account = await window.ethereum.request({
-          method: "eth_accounts",
-        });
-
-        let acc = String(account);
-        const first = acc.slice(0, 4);
-        const second = acc.slice(acc.length / 1.1, acc.length);
-        setAcc(`${first}xxxxxxxxxxx${second}`);
-
-        console.log(account);
-      } catch (error) {
-        setErr(true);
-      }
-    };
-
-    getAccount();
+    let acc = String(user?.wallet_address);
+    const first = acc.slice(0, 4);
+    const second = acc.slice(acc.length / 1.1, acc.length);
+    setAcc(`${first}xxxxxxxxxxx${second}`);
 
     return () => {};
-  }, []);
+  }, [user?.wallet_address]);
 
   const handleButton = () => {
     setIsOpen(!isOpen);
@@ -95,6 +82,7 @@ const Nav = ({ user, csrf }) => {
               </span>
             </a>
             <div className="flex items-center md:order-2">
+              
               <Dropdown
                 className={"invisible md:visible "}
                 inline
@@ -110,7 +98,9 @@ const Nav = ({ user, csrf }) => {
                 }
               >
                 <Dropdown.Header>
-                  <span className="block text-sm">{user?.name}</span>
+                  <span className="block text-sm">
+                    {user?.first_name} {user?.last_name}
+                  </span>
                   <span className="block truncate text-sm font-medium">
                     {acc}
                   </span>
@@ -213,7 +203,7 @@ const Nav = ({ user, csrf }) => {
                 <li className="md:invisible md:hidden">
                   <Image
                     className="rounded-full border-4 border-slate-500  md:invisible md:hidden cursor-pointer"
-                    src="https://avatars.dicebear.com/api/bottts/ali.svg"
+                    src={`https://avatars.dicebear.com/api/bottts/${user?.info}.svg`}
                     alt="Avtar"
                     width={100}
                     height={100}
@@ -226,7 +216,7 @@ const Nav = ({ user, csrf }) => {
                       "text-4xl text-slate-500 md:invisible md:hidden text-center font-bold"
                     }
                   >
-                    MD.Fahad Ali
+                    {user?.first_name} {user?.last_name}
                   </h1>
                   <br />
                 </li>
@@ -253,6 +243,15 @@ const Nav = ({ user, csrf }) => {
                   </Link>
                 </li>
                 <li className="w-1/2 text-center hover:bg-slate-900">
+                  <Link
+                    href="/dashboard"
+                    className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
+                  >
+                    Dashboard
+                  </Link>
+                </li>
+                
+                <li className="w-1/2 text-center hover:bg-slate-900">
                   <a
                     href="#"
                     className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
@@ -260,22 +259,7 @@ const Nav = ({ user, csrf }) => {
                     About
                   </a>
                 </li>
-                <li className="w-1/2 text-center hover:bg-slate-900">
-                  <a
-                    href="#"
-                    className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
-                  >
-                    Services
-                  </a>
-                </li>
-                <li className="w-1/2 text-center hover:bg-slate-900">
-                  <a
-                    href="#"
-                    className="block py-2 pl-3 pr-4 text-gray-900 rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"
-                  >
-                    Pricing
-                  </a>
-                </li>
+                
                 <li className="w-1/2 text-center hover:bg-slate-900">
                   <a
                     href="#"
@@ -298,7 +282,8 @@ const Nav = ({ user, csrf }) => {
         </nav>
       </Flowbite>
 
-      <Profile data={user} toggle={toggle} setToggle={setToggle} />
+      <Profile data={user} csrf={csrf} toggle={toggle} setToggle={setToggle} />
+      <ToastContainer />
     </div>
   );
 };

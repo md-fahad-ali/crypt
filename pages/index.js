@@ -10,12 +10,14 @@ import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import Web3 from "web3";
 import Modal from "./components/modal";
+import User from "./components/user";
 
 const inter = Inter({ subsets: ["latin"] });
 
 export default function Home(props) {
   // console.log(web3);
   // console.log(props?.data?.data[0]?.wallet_address || null);
+  // console.log(props?.data?.csrfToken);
 
   // For toogle
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -91,16 +93,19 @@ export default function Home(props) {
         csrf={props}
         acc={acc}
         toggle={toggleProfile}
+        csrfToken={props?.data?.csrfToken}
       />
       {props?.data?.session && (
         <main className={`${styles.main} ${inter.className}`}>
           
 
-          {props?.data?.session?.passport?.user?.type == "user" ? (
-            <div>I am user</div>
+          {/* {props?.data?.session?.passport?.user?.type == "user" ? (
+            <div>
+              <User data={props}/>
+            </div>
           ) : (
             <div>I am company</div>
-          )}
+          )} */}
 
           <footer>
             <p>copyright @2023</p>

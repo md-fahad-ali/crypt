@@ -4,15 +4,23 @@ import React, { useEffect, useState } from "react";
 import { uuidv4 } from "uuidv4";
 import Nav from "./nav";
 import { useRouter } from "next/router";
+import { ToastContainer, toast } from "react-toastify";
 
 function Profile(props) {
-  const user = props?.data;
-  const { toggle, setToggle } = props;
+  const user = props?.csrf?.data?.data?.length != undefined ? props?.csrf?.data?.data[0]: "";
+  const { toggle, setToggle, csrf } = props;
+
+  console.log(user);
 
   const router = useRouter();
   const [acc, setAcc] = useState("");
   const [err, setErr] = useState(false);
   const [open, setOpen] = useState(false);
+
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [first_name, setFirst_name] = useState("");
+  const [last_name, setLast_name] = useState("");
 
   // if (props?.data?.session?.passport) {
   // } else {
@@ -42,9 +50,67 @@ function Profile(props) {
     };
 
     getAccount();
-  }, []);
 
-  console.log(user);
+    setUsername(user?.username || "");
+    setEmail(user?.email || "");
+    setFirst_name(user?.first_name || "");
+    setLast_name(user?.last_name || "");
+    
+  }, [user?.email, user?.first_name, user?.info, user?.last_name, user?.name, user?.username]);
+
+  async function updateData(e) {
+    e.preventDefault();
+
+    try {
+      const result = await axios.post(
+        "/api/profile",
+        {
+          email: e.target.email.value,
+          username: e.target.username.value,
+          first_name: e.target.first_name.value,
+          last_name: e.target.last_name.value,
+          _csrf: csrf?.data?.csrfToken,
+        },
+        {
+          withCredentials: true,
+          headers: {
+            Accept: "application/json",
+            "Content-Type": "application/json",
+            "xsrf-token": csrf?.csrf,
+          },
+        }
+      );
+
+      console.log(result.data);
+      if (result.data === 1) {
+        toast.success('Updated data sucessfully!', {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+          });
+      } else {
+        toast.error("Can't update the data", {
+          position: "top-right",
+          autoClose: 5000,
+          hideProgressBar: false,
+          closeOnClick: true,
+          pauseOnHover: true,
+          draggable: true,
+          progress: undefined,
+          theme: "dark",
+          });
+      }
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  // console.log(props);
   return (
     <div>
       <div className="">
@@ -93,7 +159,52 @@ function Profile(props) {
               </div>
               {/* <!-- Modal body --> */}
               <div className="p-6 flex justify-center space-y-6">
-                <form className="md:w-1/2">
+                <form
+                  className="md:w-1/2"
+                  onSubmit={(e) => {
+                    updateData(e);
+                  }}
+                >
+                  <div className="mb-6">
+                    <label
+                      htmlFor="firstname"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Your Firstname
+                    </label>
+                    <input
+                      type="firstname"
+                      id="firstname"
+                      name="first_name"
+                      defaultValue={first_name}
+                      onChange={(e) => {
+                        setFirst_name(e.target.value);
+                      }}
+                      // value={first_name || ""}
+                      className="bg-gray-50 outline-none border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                      required
+                    />
+                  </div>
+                  <div className="mb-6">
+                    <label
+                      htmlFor="lastname"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Your Lastname
+                    </label>
+                    <input
+                      type="lastname"
+                      id="lastname"
+                      name="last_name"
+                      defaultValue={last_name}
+                      onChange={(e) => {
+                        setLast_name(e.target.value);
+                      }}
+                      // value={last_name || ""}
+                      className="bg-gray-50 outline-none border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                      required
+                    />
+                  </div>
                   <div className="mb-6">
                     <label
                       htmlFor="username"
@@ -104,7 +215,12 @@ function Profile(props) {
                     <input
                       type="username"
                       id="username"
-                      value={user?.username || ""}
+                      name="username"
+                      // value={username || ""}
+                      defaultValue={username || ""}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                      }}
                       className="bg-gray-50 outline-none border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                       required
                     />
@@ -119,9 +235,14 @@ function Profile(props) {
                     <input
                       type="email"
                       id="email"
+                      name="email"
                       className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                       placeholder="name@flowbite.com"
-                      value={user?.info || ""}
+                      // value={email || ""}
+                      defaultValue={email || ""}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                      }}
                       required
                     />
                   </div>
@@ -130,7 +251,7 @@ function Profile(props) {
                     <input
                       type="disabled"
                       id="website-admin"
-                      value={acc || ""}
+                      defaultValue={acc || ""}
                       style={{
                         borderRadius: "7px 0px 0px 7px",
                         borderRight: "none",
@@ -155,9 +276,6 @@ function Profile(props) {
                   <button
                     type="submit"
                     className="text-white bg-slate-800 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm w-full sm:w-auto px-5 py-2.5 text-center dark:bg-slate-800 dark:hover:bg-slate-900 dark:focus:ring-slate-600"
-                    onClick={(e) => {
-                      e.preventDefault();
-                    }}
                   >
                     Update
                   </button>
@@ -169,6 +287,8 @@ function Profile(props) {
           </div>
         </div>
       </div>
+
+      
     </div>
   );
 }
