@@ -23,7 +23,7 @@ handler.get(async function (req, res) {
     res.json({ session: req.session , data:data,csrfToken: req.csrfToken() });
   } catch (error) {
     console.log(error);
-    res.json({ error: "" });
+    res.status(404).send('what???');
   }
 });
 

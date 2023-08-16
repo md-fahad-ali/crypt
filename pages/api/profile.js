@@ -35,7 +35,7 @@ handler.get(async function (req, res) {
     res.json({ session: req.session, data: data });
   } catch (error) {
     console.log(error);
-    res.json({ error: "" });
+    res.status(404).send("what??");
   }
 });
 

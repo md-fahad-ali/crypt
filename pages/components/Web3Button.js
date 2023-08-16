@@ -33,6 +33,7 @@ function Web3Button(props) {
   // console.log(props?.lock_key);
 
   const connectToWallet = async (e) => {
+    console.log("client connect");
     e.preventDefault();
 
     try {

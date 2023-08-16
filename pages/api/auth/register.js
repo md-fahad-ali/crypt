@@ -113,7 +113,7 @@ handler.post(parseForm, csrfProtection ,async (req, res, next) => {
       password,
       fromSig,
     } = req.body;
-    console.log("I am exicuting from server side /api/metamask");
+    console.log("I am executing from server side /api/metamask");
     console.log(req.body);
     if (fromSig == true) {
       const emailFind = await db.select().from("auth").where("email", email);
