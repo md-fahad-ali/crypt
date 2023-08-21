@@ -43,6 +43,7 @@ handler.post(parseForm, csrfProtection, async function (req, res, next) {
   
   const { error, value } = sigSchema.validate(req.body);
   console.log(value?.username);
+  
   try {
     const data = await db("auth").where({ username:value?.username }).update({
       username: value?.username,

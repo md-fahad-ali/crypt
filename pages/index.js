@@ -9,7 +9,7 @@ import { useRouter } from "next/router";
 import { useEffect, useState } from "react";
 import { v4 as uuidv4 } from "uuid";
 import Web3 from "web3";
-import Modal from "./components/modal";
+
 import User from "./components/user";
 
 const inter = Inter({ subsets: ["latin"] });

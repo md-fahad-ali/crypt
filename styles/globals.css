@@ -15,7 +15,9 @@
     --background-end-rgb: 0, 0, 0;
   }
 }
-button,a {
+
+button,
+a {
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -24,23 +26,41 @@ button,a {
   -ms-user-select: none;
   user-select: none;
 }
-button:focus ,a:focus{
+
+button:focus,
+a:focus {
   outline: none !important;
 }
+
 body {
   background-color: rgb(24, 34, 51);
 }
-@layer utilities {
+
+/* @layer utilities {
   @variants responsive {
-    /* Hide scrollbar for Chrome, Safari and Opera */
+    
     .no-scrollbar::-webkit-scrollbar {
         display: none;
     }
 
-    /* Hide scrollbar for IE, Edge and Firefox */
+    
     .no-scrollbar {
-        -ms-overflow-style: none;  /* IE and Edge */
-        scrollbar-width: none;  /* Firefox */
+        -ms-overflow-style: none;  
+        scrollbar-width: none;  
     }
   }
+} */
+@layer utilities {
+
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
+  }
+
 }

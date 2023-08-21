@@ -147,7 +147,12 @@ handler.post(parseForm, csrfProtection, async function (req, res, next) {
 
 handler.get(parseForm, function (req, res) {
   const hash = uuid();
-  res.json({ session: req?.session, csrf: req?.csrfToken(), hash: hash });
+  res.json({
+    session: req?.session,
+    csrf: req?.csrfToken(),
+    hash: hash,
+    warn: "from login",
+  });
 });
 
 export default handler;

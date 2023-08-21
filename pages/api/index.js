@@ -20,7 +20,7 @@ handler.get(async function (req, res) {
       .select()
       .from("auth")
       .where("username", req.session?.passport?.user?.username);
-    res.json({ session: req.session , data:data,csrfToken: req.csrfToken() });
+    res.json({ session: req.session , data:data,csrfToken: req.csrfToken(),warn:"from index" });
   } catch (error) {
     console.log(error);
     res.status(404).send('what???');
