@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import Nav from "../../components/nav";
 import axios from "axios";
-import { useCsrf } from "@/lib/csrf";
+// import { setup, useCsrf } from "@/lib/csrf";
 import { getCookie, setCookie } from "cookies-next";
 import { DarkThemeToggle, Flowbite } from "flowbite-react";
 import Image from "next/image";
@@ -13,12 +13,15 @@ import Link from "next/link";
 import { uuid } from "uuidv4";
 import db from "@/pages/api/db";
 import { useRouter } from "next/router";
+import { doubleCsrf } from "csrf-csrf";
+import cookieParser from "cookie-parser";
+
 import CreateCommunity from "@/pages/components/create_community";
 
 function Dashboard(props) {
   const router = useRouter();
 
-  // console.log(props);
+  console.log(props);
   const [isJoined, setIsJoined] = useState(props?.joined);
 
   const [isOpen, setIsOpen] = useState(false);
@@ -255,26 +258,6 @@ function Dashboard(props) {
                       </li>
                     ))
                   )}
-                  {/* {connection?.map((e, i) => (
-                    <li key={i}>
-                      <div className="flex gap-5 items-center">
-                        <Image
-                          src={`${e?.company_picture}`}
-                          className={" max-w-[3.5rem] rounded-lg border-2"}
-                          alt="wallet"
-                          width={100}
-                          height={100}
-                        />
-                        {!isOpen ? (
-                          ""
-                        ) : (
-                          <h1 className="text-white">{e?.company_name}</h1>
-                        )}
-                      </div>
-                      {console.log(connection)}
-                      <br />
-                    </li>
-                  ))} */}
                 </ul>
               ) : (
                 ""
@@ -353,7 +336,7 @@ function Dashboard(props) {
 
         {modal ? (
           <div>
-            <CreateCommunity props={props} setModal={setModal}/>
+            <CreateCommunity props={props} setModal={setModal} />
           </div>
         ) : (
           ""
@@ -376,22 +359,17 @@ export async function getServerSideProps(context) {
   const { req, res } = context;
   // console.log(context);
   // console.log(context.query || "nai");
-  const t = getCookie("_csrf", { req, res });
-  const meta_key = await getHash();
+  const t = getCookie("csrf-token", { req, res });
+  // doubleCsrfToken(req, res, next);
+  
   // console.log(meta_key);
   const ck = t?.length || 0;
   if (ck == 0) {
-    setCookie("_csrf", uuid(), {
-      req,
-      res,
-      httpOnly: true,
-      secure: process.env.NODE_ENV !== "development",
-      maxAge: 60 * 1000,
-      sameSite: "lax",
-      path: "/",
-    });
+    doubleCsrfToken(req, res);
     console.log("cookie set");
   }
+
+  
   try {
     const check = process.env.NODE_ENV == "development";
     console.log(
@@ -410,7 +388,7 @@ export async function getServerSideProps(context) {
     );
 
     console.log("from server");
-    // console.log(test?.data?.session?.passport?.user?.username);
+    console.log(test?.data);
     if (test?.data?.session?.passport?.user?.username || false) {
       console.log("ase login");
       const data = await db
@@ -450,7 +428,7 @@ export async function getServerSideProps(context) {
         props: {
           data: test?.data?.csrf || null,
           all: test?.data?.session || null,
-          csrf: getCookie("_csrf", { req, res }) || {},
+          csrf: getCookie("csrf-token", { req, res }) || {},
           user_details: data,
           connection: connection,
           page_data: page_data,
@@ -464,6 +442,7 @@ export async function getServerSideProps(context) {
         .where("slug", context?.query?.co_name)
         .first();
 
+      console.log("nai login");
       return {
         props: {
           data: test?.data?.csrf || null,
@@ -474,7 +453,6 @@ export async function getServerSideProps(context) {
           page_data: page_data,
         },
       };
-      console.log("nai login");
     }
   } catch (error) {
     console.log(error);

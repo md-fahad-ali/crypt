@@ -3,13 +3,14 @@ import NextImage from "next/image";
 import React, { useState } from "react";
 import { AiOutlineCloudUpload } from "react-icons/ai";
 const slugify = require("slugify");
+import { setup } from '../../lib/csrf';
 
 function CreateCommunity(props) {
   const [file, setFile] = useState();
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState("");
   const [up, setUp] = useState(true);
-
+  const [ufile ,setUFile] = useState();
   // console.log(props?.props);
   // Form Element
   const [img, setImage] = useState("");
@@ -21,7 +22,7 @@ function CreateCommunity(props) {
     setIsOpen(true);
     console.log(e.target.files);
     setFile(URL.createObjectURL(e.target.files[0]));
-
+    setUFile(e.target.files[0]);
     const image = new Image();
     image.src = URL.createObjectURL(e.target.files[0]);
     image.onload = () => {
@@ -47,14 +48,21 @@ function CreateCommunity(props) {
     e.preventDefault();
     const company_slug = slugify(coName.toLowerCase());
     // console.log(img, coName, company_slug, description, option);
-
-    const formData = new FormData();
-    formData.append("name", coName);
-    formData.append("description", description);
-    formData.append("image", file);
-    formData.append("company_slug", company_slug);
-    formData.append("option", option);
-    formData.append("_csrf",  props?.props?.data,);
+    const formData = { 
+      name:coName,
+      description:description,
+      image:ufile,
+      company_slug:company_slug,
+      option:option,
+      _csrf:props?.props?.data,
+    }   
+    // const formData = new FormData();
+    // formData.append("name", coName);
+    // formData.append("description", description);
+    // formData.append("image", ufile);
+    // formData.append("company_slug", company_slug);
+    // formData.append("option", option);
+    // formData.append("_csrf",  props?.props?.data,);
 
     try {
       const result = await axios.post(
