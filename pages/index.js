@@ -15,6 +15,7 @@ import User from "./components/user";
 const inter = Inter({ subsets: ["latin"] });
 
 export default function Home(props) {
+  console.log(props?.data);
   // console.log(web3);
   // console.log(props?.data?.data[0]?.wallet_address || null);
   // console.log(props?.data?.csrfToken);
@@ -22,11 +23,10 @@ export default function Home(props) {
   // For toogle
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [error, setErr] = useState(false);
-  const [address, setAddress] = useState(
-    // props?.data?.data[0]?.wallet_address || null
-  );
+  const [address, setAddress] = useState();
+  // props?.data?.data[0]?.wallet_address || null
 
-  const [ profileOpen, setProfileOpen ] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
 
   // const toggleProfile = () => {
   //   setProfileOpen((profileOpen) => !profileOpen);
@@ -45,11 +45,11 @@ export default function Home(props) {
   const [user, setUser] = useState("");
   if (props?.data?.session?.passport) {
   } else {
-    try {
-      router.push("/auth/login");
-    } catch (error) {
-      console.log(error);
-    }
+    // try {
+    //   router.push("/auth/login");
+    // } catch (error) {
+    //   console.log(error);
+    // }
   }
   useEffect(() => {
     const getAccount = async () => {
@@ -76,7 +76,7 @@ export default function Home(props) {
       setIsModalOpen(false);
       console.log("no");
     }
-    
+
     return () => {};
   }, [address, props]);
 
@@ -88,18 +88,20 @@ export default function Home(props) {
         <meta name="viewport" content="width=device-width, initial-scale=1" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
-      <Nav
-        user={props?.data?.session?.passport ? user : "default"}
-        csrf={props}
-        acc={acc}
-        toggle={toggleProfile}
-        csrfToken={props?.data?.csrfToken}
-      />
-      {props?.data?.session && (
-        <main className={`${styles.main} ${inter.className}`}>
-          
-
-          {/* {props?.data?.session?.passport?.user?.type == "user" ? (
+      <div className={"fixed w-full"}>
+        <Nav
+          user={props?.data?.session?.passport ? user : "default"}
+          csrf={props}
+          acc={acc}
+          hash={props?.hash}
+          csrfForHeader={props?.csrfForHeader}
+          toggle={toggleProfile}
+          csrfToken={props?.data?.csrfToken}
+          api_url={props?.api_url}
+        />
+      </div>
+      <main className={`${styles.main} ${inter.className}`}>
+        {/* {props?.data?.session?.passport?.user?.type == "user" ? (
             <div>
               <User data={props}/>
             </div>
@@ -107,20 +109,19 @@ export default function Home(props) {
             <div>I am company</div>
           )} */}
 
-          <footer>
-            <p>copyright @2023</p>
-          </footer>
-        </main>
-      )}
+        <footer>
+          <p>copyright @2023</p>
+        </footer>
+      </main>
     </>
   );
 }
 
 export async function getServerSideProps({ req, res }) {
-  const csrfToken = getCookie("_csrf", { req, res }) || "";
+  const csrfToken = getCookie("uniqueId", { req, res }) || "";
 
   if (!csrfToken) {
-    setCookie("_csrf", uuidv4(), {
+    setCookie("uniqueId", uuidv4(), {
       req,
       res,
       httpOnly: true,
@@ -137,30 +138,33 @@ export async function getServerSideProps({ req, res }) {
     Cookie: req.headers.cookie || "",
   };
   try {
-    const check = process.env.NODE_ENV == "development";
-    const test = await axios.get(
-      check
-        ? `${req.headers["x-forwarded-proto"]}://${req.headers.host}/api`
-        : `${process.env.WEB_URL}/api`,
-      {
-        withCredentials: true,
-        headers: {
-          Cookie: req.headers.cookie,
-        },
-      }
-    );
-    console.log(test.data);
+    const test_data = await axios({
+      url: `${process.env.WEB_URL}/main/`,
+      method: "get",
+      withCredentials: true,
+      headers: {
+        "Access-Control-Allow-Origin": "true",
+        origin: "http://localhost:3000",
+        Cookie: req.headers.cookie,
+      },
+    });
+
+    console.log(test_data.data);
 
     return {
       props: {
-        data: test.data,
-        csrf: getCookie("_csrf", { req, res }) || {},
+        data: test_data.data,
+        csrfForHeader: getCookie("uniqueId", { req, res }) || {},
+        api_url: process.env.WEB_URL || null,
+        hash: test_data.data?.hash || null,
       },
     };
   } catch (error) {
     console.log(error);
     return {
-      props: {},
+      props: {
+        api_url: process.env.WEB_URL || null,
+      },
     };
   }
 }

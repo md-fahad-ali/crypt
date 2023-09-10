@@ -1,0 +1,71 @@
+const cors = require("cors");
+const Joi = require("joi");
+import bodyParser from "body-parser";
+import handler from "../../handler";
+import db from "../../db";
+import { uuid } from "uuidv4";
+import { doubleCsrfToken } from "@/lib/csrf";
+import { createHash, randomBytes } from "crypto";
+
+export const config = {
+  api: {
+    bodyParser: false,
+  },
+};
+
+const whitelist = ["http://localhost:3000", "http://0.0.0.0:3000"];
+const corsOptions = {
+  origin: function (origin, callback) {
+    if (whitelist.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      const err = new Error("You are not allowed to access this page. ");
+      err.stack = "";
+      console.log(err.name);
+      callback(err);
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type"],
+  credentials: true,
+};
+
+const corsMiddleware = cors(corsOptions);
+
+handler.use((req, res, next, err) => {
+  corsMiddleware(
+    req,
+    res,
+    (err) => {
+      if (err) {
+        res.status(403).json({ error: err.message });
+      } else {
+        next();
+      }
+    },
+    {
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    }
+  );
+});
+
+let final_token;
+
+handler.get( function (req, res) {
+  const token = randomBytes(16).toString("hex");
+  final_token = token;
+
+  res.json({
+    session: req?.session,
+    csrf: final_token,
+    warn: "from details",
+  });
+});
+
+
+handler.post( async function (req, res) {
+  res.json(req.body)
+})
+ 
+
+export default handler;

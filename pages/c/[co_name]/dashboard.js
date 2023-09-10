@@ -1,8 +1,5 @@
-import React, { useEffect, useState } from "react";
-import Nav from "../../components/nav";
-import axios from "axios";
-// import { setup, useCsrf } from "@/lib/csrf";
 import { getCookie, setCookie } from "cookies-next";
+import axios from "axios";
 import { DarkThemeToggle, Flowbite } from "flowbite-react";
 import Image from "next/image";
 import { BiSearch } from "react-icons/bi";
@@ -11,39 +8,46 @@ import { AiOutlinePlus } from "react-icons/ai";
 import { getHash } from "@/lib/hash";
 import Link from "next/link";
 import { uuid } from "uuidv4";
-import db from "@/pages/api/db";
 import { useRouter } from "next/router";
-import { doubleCsrf } from "csrf-csrf";
-import cookieParser from "cookie-parser";
-
 import CreateCommunity from "@/pages/components/create_community";
+import React, { useEffect, useState } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import { Twirl as Hamburger } from "hamburger-react";
 
 function Dashboard(props) {
+  console.log(props?.csrfForHeader);
+
   const router = useRouter();
 
-  console.log(props);
-  const [isJoined, setIsJoined] = useState(props?.joined);
+  // console.log(props?.data?.pag e_data);
+  console.log(props?.data?.isJoined);
+  const [isJoined, setIsJoined] = useState(false);
 
   const [isOpen, setIsOpen] = useState(false);
+  const [isHamOpen, setHamOpen] = useState(false);
   const [isAuth, setIsAuth] = useState(false);
   const [notFound, setNotFound] = useState(false);
   const [connection, setConnection] = useState([]);
   const [modal, setModal] = useState(false);
 
-  const array = [
-    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20,
-  ];
+  console.log("isJoined", isJoined.length > 0);
 
   useEffect(() => {
-    const Auth = props?.all?.passport?.user ? true : false;
+    const Auth = props?.data?.session?.passport?.user ? true : false;
     setIsAuth(Auth);
-    setConnection(props?.connection);
-    setIsJoined(props?.joined);
-  }, [props?.all?.passport?.user, props?.connection, props?.joined]);
+    setConnection(props?.data?.connection);
+    setIsJoined(props?.data?.isJoined);
+  }, [
+    props?.data?.session?.passport?.user,
+    props?.data?.connection[0],
+    props?.data?.joined[0],
+  ]);
 
   function FindData(e) {
     console.log(e);
-    const result = props?.connection?.filter((el) => {
+    const connections = props?.data?.connection;
+
+    const result = connections.filter((el) => {
       const result = el?.company_name.toLowerCase().indexOf(e?.toLowerCase());
       if (result != -1) {
         // console.log(el);
@@ -58,88 +62,110 @@ function Dashboard(props) {
     setConnection(result);
   }
 
-  async function leaveConnection(e) {
-    e.preventDefault();
-    const username = props?.user_details[0]?.username || null;
-    const company_slug = router?.query?.co_name;
-    const company_picture = props?.page_data?.image;
-    const company_name = props?.page_data?.name;
-    console.log(props?.csrf, props?.data);
-
-    try {
-      const result = await axios.put(
-        `/api/c/${company_slug}/details`,
-        {
-          username: username,
-          company_slug: company_slug,
-          company_picture: company_picture,
-          company_name: company_name,
-          _csrf: props?.data,
-        },
-        {
-          withCredentials: true,
-          headers: {
-            Accept: "application/json",
-            "Content-Type": "application/json",
-            "xsrf-token": props?.csrf,
-          },
-        }
-      );
-
-      setIsJoined(0);
-      console.log(result.data);
-    } catch (error) {
-      console.log(error);
-    }
-  }
-
   async function joinConnection(e) {
     e.preventDefault();
-    const username = props?.user_details[0]?.username || null;
-    const company_slug = router?.query?.co_name;
-    const company_picture = props?.page_data?.image;
-    const company_name = props?.page_data?.name;
-    console.log(props?.csrf, props?.data);
-
     try {
-      const result = await axios.post(
-        `/api/c/${company_slug}/details`,
+      const res = await axios.get(
+        `${props?.api_url}/c/${router.query?.co_name}`,
         {
-          username: username,
-          company_slug: company_slug,
-          company_picture: company_picture,
-          company_name: company_name,
-          _csrf: props?.data,
+          withCredentials: true,
+        }
+      );
+
+      const result = await axios.post(
+        `${props?.api_url}/c/add`,
+        {
+          company_name: props?.data?.page_data?.name,
+          company_slug: props?.data?.page_data?.slug,
+          company_picture: props?.data?.page_data?.image,
+          csrfToken: res.data?.csrfToken,
         },
         {
           withCredentials: true,
           headers: {
             Accept: "application/json",
             "Content-Type": "application/json",
-            "xsrf-token": props?.csrf,
+            "x-csrf-token": props?.csrfForHeader,
           },
         }
       );
-      setIsJoined(1);
-      // console.log(result.data);
+      console.log(result.data ? true : false);
+
+      console.log(result.data);
+      setIsJoined(true);
     } catch (error) {
       console.log(error);
     }
   }
 
+  async function leaveConnection(e) {
+    e.preventDefault();
+    try {
+      const res = await axios.get(
+        `${props?.api_url}/c/${router.query?.co_name}`,
+        {
+          withCredentials: true,
+        }
+      );
+
+      const result = await axios.delete(`${props?.api_url}/c/leave`, {
+        data: {
+          company_slug: props?.data?.page_data?.slug,
+          csrfToken: res.data?.csrfToken,
+        },
+        withCredentials: true,
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
+          "x-csrf-token": props?.csrfForHeader,
+        },
+      });
+
+      console.log(result.data);
+      setIsJoined(false);
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  // console.log(connection);
   return (
     <Flowbite theme={{ dark: true }}>
       <div>
+        <nav class="bg-white dark:bg-zinc-900 fixed w-full z-20 top-0 left-0 border-b border-gray-200 dark:border-zinc-600 sm:hidden">
+          <div class="max-w-screen-xl flex flex-wrap items-center justify-start gap-[10px] mx-auto p-2">
+            <button
+              className={
+                "text-white focus:bg-zinc-800 p-1 scale-[0.59] block sm:hidden"
+              }
+            >
+              <Hamburger toggled={isHamOpen} toggle={setHamOpen} />
+            </button>
+            <a href="https://flowbite.com/" class="flex items-center">
+              <img
+                src="https://flowbite.com/docs/images/logo.svg"
+                class="h-8 mr-3"
+                alt="Flowbite Logo"
+              />
+              <span class="self-center text-2xl font-semibold whitespace-nowrap dark:text-white">
+                Flowbite
+              </span>
+            </a>
+          </div>
+        </nav>
+
         <aside
           id="default-sidebar"
-          className="fixed flex top-0 left-0 bg-gray-50 dark:bg-slate-900 z-40 w-80 h-screen transition-transform -translate-x-full sm:translate-x-0"
+          className={`fixed flex top-[71px] sm:top-0 left-0 bg-gray-50 dark:bg-transparent z-40 w-80 h-screen transition-transform ${
+            isHamOpen ? "" : "-translate-x-full"
+          } sm:translate-x-0`}
           aria-label="Sidebar"
         >
           <div
             className={`h-full flex overflow-y-hidden transition-all duration-300 `}
             style={isOpen ? { width: "inherit" } : { width: "auto" }}
           >
-            <ul className="bg-slate-950 space-y-2 py-4 items-center font-medium flex p-3 flex-col">
+            <ul className=" bg-black space-y-2 py-4 items-center font-medium flex p-3 flex-col">
               <li>
                 <a href="#" className="flex">
                   <Image
@@ -230,7 +256,7 @@ function Dashboard(props) {
               <hr />
               {isAuth ? (
                 <ul className="overflow-scroll no-scrollbar">
-                  {connection?.length == 0 ? (
+                  {/* {connection?.length == 0 ? (
                     <div>
                       <h1 className="text-white">Not Found</h1>
                     </div>
@@ -257,24 +283,81 @@ function Dashboard(props) {
                         <br />
                       </li>
                     ))
-                  )}
+                  )} */}
+
+                  {connection?.map((e, i) => (
+                    <li key={i}>
+                      <Link href={`/c/${e?.company_slug}/dashboard`}>
+                        <div className="flex gap-5 items-center">
+                          <Image
+                            src={`${e?.company_picture}`}
+                            className={" max-w-[3.5rem] rounded-lg border-2"}
+                            alt="wallet"
+                            width={100}
+                            height={100}
+                          />
+                          {!isOpen ? (
+                            ""
+                          ) : (
+                            <h1 className="text-white">{e?.company_name}</h1>
+                          )}
+                        </div>
+                      </Link>
+                      <br />
+                    </li>
+                  ))}
                 </ul>
               ) : (
                 ""
               )}
             </ul>
+
             {!isOpen ? (
-              <ul className="bg-slate-950 ml-3 space-y-2 w-screen font-medium">
+              <ul className="bg-black ml-3 space-y-2 w-screen font-medium">
                 <li className="">
-                  <div className="h-auto max-w-full bg-green-50">
+                  {/* <div
+                    className={`h-auto bg-cover max-w-full overflow-hidden bg-green-50`}
+                  >
                     <Image
-                      src={`${props?.page_data?.image}`}
+                      src={`${props?.data?.page_data?.image}`}
                       className=""
-                      alt={props?.page_data?.name}
+                      alt={props?.data?.page_data?.name}
                       width={0}
                       height={0}
                       layout="responsive"
                     />
+                    <div
+                      className=" bottom-0 px-4 h-full flex items-end py-3 w-full"
+                      style={{
+                        background:
+                          "repeating-linear-gradient(358deg, black, transparent 257px)",
+                      }}
+                    >
+                      <h1 className="text-white font-semibold">
+                        {props?.data?.page_data?.name}
+                      </h1>
+                    </div>
+                  </div> */}
+                  <div class="h-[auto] w-[100%] relative">
+                    <Image
+                      src={`${props?.data?.page_data?.image}`}
+                      className=""
+                      alt={props?.data?.page_data?.name}
+                      width={0}
+                      height={0}
+                      layout="responsive"
+                    />
+                    <div
+                      className="absolute bottom-0 px-4 py-3 h-full flex items-end w-full"
+                      style={{
+                        background:
+                          "repeating-linear-gradient(358deg, black, transparent 257px)",
+                      }}
+                    >
+                      <h1 className="text-white font-semibold ">
+                        {props?.data?.page_data?.name}
+                      </h1>
+                    </div>
                   </div>
                   <div>
                     <br />
@@ -296,33 +379,38 @@ function Dashboard(props) {
                           Completed Task
                         </Link>
                       </li>
-
-                      {isJoined != 1 ? (
-                        <li>
-                          <button
-                            href={"#"}
-                            style={{ textAlign: "initial" }}
-                            onClick={(e) => {
-                              joinConnection(e);
-                            }}
-                            className="p-3 rounded-l-xl hover:bg-slate-800 w-full block"
-                          >
-                            Join the Community
-                          </button>
-                        </li>
+                      {!props?.data?.created_by ? (
+                        !isJoined ? (
+                          <li>
+                            <button
+                              href={"#"}
+                              style={{ textAlign: "initial" }}
+                              onClick={(e) => {
+                                isAuth
+                                  ? joinConnection(e)
+                                  : router.push("/auth/login");
+                              }}
+                              className="p-3 rounded-l-xl hover:bg-slate-800 w-full block"
+                            >
+                              Join the Community
+                            </button>
+                          </li>
+                        ) : (
+                          <li>
+                            <button
+                              href={"#"}
+                              style={{ textAlign: "initial" }}
+                              onClick={(e) => {
+                                leaveConnection(e);
+                              }}
+                              className="p-3 text-red-600 rounded-l-xl hover:bg-slate-800 w-full block"
+                            >
+                              Leave the Community
+                            </button>
+                          </li>
+                        )
                       ) : (
-                        <li>
-                          <button
-                            href={"#"}
-                            style={{ textAlign: "initial" }}
-                            onClick={(e) => {
-                              leaveConnection(e);
-                            }}
-                            className="p-3 text-red-600 rounded-l-xl hover:bg-slate-800 w-full block"
-                          >
-                            Leave the Community
-                          </button>
-                        </li>
+                        ""
                       )}
                     </ul>
                   </div>
@@ -334,22 +422,22 @@ function Dashboard(props) {
           </div>
         </aside>
 
-        {modal ? (
+        {/* {modal ? (
           <div>
             <CreateCommunity props={props} setModal={setModal} />
           </div>
         ) : (
           ""
-        )}
+        )} */}
 
         <div className="p-4 sm:ml-80">
-          <h1>Hello World!</h1>
+          <h1 className="text-white">
+            
+          </h1>
         </div>
       </div>
+      <ToastContainer />
     </Flowbite>
-    // <div>
-    //   <h1>Hello World!</h1>
-    // </div>
   );
 }
 
@@ -357,107 +445,49 @@ export default Dashboard;
 
 export async function getServerSideProps(context) {
   const { req, res } = context;
-  // console.log(context);
-  // console.log(context.query || "nai");
-  const t = getCookie("csrf-token", { req, res });
-  // doubleCsrfToken(req, res, next);
-  
-  // console.log(meta_key);
+  const t = getCookie("uniqueId", { req, res });
   const ck = t?.length || 0;
   if (ck == 0) {
-    doubleCsrfToken(req, res);
+    setCookie("uniqueId", uuid(), {
+      req,
+      res,
+      httpOnly: true,
+      secure: process.env.NODE_ENV !== "development",
+      maxAge: 60 * 1000,
+      sameSite: "lax",
+      path: "/",
+    });
     console.log("cookie set");
   }
 
-  
   try {
-    const check = process.env.NODE_ENV == "development";
-    console.log(
-      `${req.headers["x-forwarded-proto"]}://${req.headers.host}/api/c/${context?.query?.co_name}/details`
-    );
     const test = await axios.get(
-      check
-        ? `${req.headers["x-forwarded-proto"]}://${req.headers.host}/api/c/${context?.query?.co_name}/details`
-        : `${process.env.WEB_URL}/api/c/${context?.query?.co_name}/details`,
+      `${process.env.WEB_URL}/c/${context?.query?.co_name}`,
       {
         withCredentials: true,
         headers: {
           Cookie: req.headers.cookie,
+          origin: "http://localhost:3000",
         },
       }
     );
 
-    console.log("from server");
-    console.log(test?.data);
-    if (test?.data?.session?.passport?.user?.username || false) {
-      console.log("ase login");
-      const data = await db
-        .select(
-          "username",
-          "email",
-          "wallet_address",
-          "first_name",
-          "last_name"
-        )
-        .from("auth")
-        .where("username", test?.data?.session?.passport?.user?.username);
-      // console.log(data);
+    console.log("test data ", test.data);
 
-      const connection = await db
-        .select()
-        .from("user_details")
-        .where("username", test?.data?.session?.passport?.user?.username);
-
-      const page_data = await db
-        .select("image", "name", "slug")
-        .from("company_details")
-        .where("slug", context?.query?.co_name)
-        .first();
-
-      const joined = await db
-        .select()
-        .from("user_details")
-        .where("username", test?.data?.session?.passport?.user?.username)
-        .andWhere("company_name", context?.query?.co_name);
-
-      console.log("getServerside props");
-      // console.log(joined.length);
-      // console.log(test?.data?.csrf);
-
-      return {
-        props: {
-          data: test?.data?.csrf || null,
-          all: test?.data?.session || null,
-          csrf: getCookie("csrf-token", { req, res }) || {},
-          user_details: data,
-          connection: connection,
-          page_data: page_data,
-          joined: joined?.length,
-        },
-      };
-    } else {
-      const page_data = await db
-        .select()
-        .from("company_details")
-        .where("slug", context?.query?.co_name)
-        .first();
-
-      console.log("nai login");
-      return {
-        props: {
-          data: test?.data?.csrf || null,
-          all: test?.data?.session || null,
-          csrf: getCookie("_csrf", { req, res }) || {},
-          user_details: {},
-          connection: {},
-          page_data: page_data,
-        },
-      };
-    }
-  } catch (error) {
-    console.log(error);
     return {
-      props: {},
+      props: {
+        data: test.data,
+        api_url: process.env.WEB_URL,
+        csrfForHeader: getCookie("uniqueId", { req, res }),
+      },
+    };
+  } catch (error) {
+    return {
+      props: {
+        data: {},
+        api_url: process.env.WEB_URL,
+      },
     };
   }
+  // console.log(process.env.WEB_URL);
 }

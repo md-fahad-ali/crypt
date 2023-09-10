@@ -17,7 +17,7 @@
 }
 
 button,
-a {
+a,input,label {
   -webkit-tap-highlight-color: transparent;
   -webkit-touch-callout: none;
   -webkit-user-select: none;
@@ -33,7 +33,7 @@ a:focus {
 }
 
 body {
-  background-color: rgb(24, 34, 51);
+  background-color:#101010;
 }
 
 /* @layer utilities {
@@ -50,6 +50,10 @@ body {
     }
   }
 } */
+option{
+  background-color:rgb(31, 33, 37);
+}
+
 @layer utilities {
 
   .no-scrollbar::-webkit-scrollbar {

@@ -1,80 +1,68 @@
-const csrf = require("csurf");
+import handler from "../../handler";
 const cors = require("cors");
 const Joi = require("joi");
 import bodyParser from "body-parser";
-import handler from "../../handler";
-import db from "../../db";
 import { uuid } from "uuidv4";
+import db from "../../db";
+import { doubleCsrfToken } from "@/lib/csrf";
 
-var csrfProtection = csrf({ cookie: true });
-handler.use(csrfProtection);
-let parseForm = bodyParser.urlencoded({ extended: false });
-
+const whitelist = ["http://localhost:3000", "http://0.0.0.0:3000"];
 const corsOptions = {
-  origin: "http://localhost:3000",
+  origin: function (origin, callback) {
+    if (whitelist.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      const err = new Error("You are not allowed to access this page. ");
+      err.stack = "";
+      console.log(err.name);
+      callback(err);
+    }
+  },
+  methods: ["GET", "POST", "PUT", "DELETE"],
+  allowedHeaders: ["Content-Type"],
   credentials: true,
 };
 
-handler.use(cors(corsOptions));
+const corsMiddleware = cors(corsOptions);
 
-handler.get(parseForm, function (req, res) {
+
+handler.use((req, res, next, err) => {
+  corsMiddleware(
+    req,
+    res,
+    (err) => {
+      if (err) {
+        res.status(403).json({ error: err.message });
+      } else {
+        next();
+      }
+    },
+    {
+      methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
+    }
+  );
+});
+
+
+
+
+
+handler.get(function (req, res) {
+  // console.log(req.session);
   res.json({
-    session: req?.session,
-    csrf: req?.csrfToken(),
+    session: req.session || null,
+    csrf: "",
     warn: "from details",
   });
 });
 
-handler.post(parseForm, csrfProtection, async function (req, res) {
-  try {
-    const connection = await db
-      .select()
-      .from("user_details")
-      .where("username", req.session?.passport?.user?.username)
-      .andWhere("company_name", req?.query?.co_name);
-    console.log(connection);
-    if (connection.length > 0) {
-      console.log("Connection");
-    } else {
-      if (req.session?.passport?.user?.username == req?.body?.username) {
-        const data = await db
-          .insert({
-            username: req?.body?.username,
-            company_name: req?.body.company_name,
-            company_slug: req?.body?.company_slug,
-            company_picture: req?.body?.company_picture,
-          })
-          .into("user_details");
-
-        console.log("No connection");
-        res.json(data);
-      } else {
-        res.json({ error: "error" });
-      }
-    }
-  } catch (error) {
-    console.log(error);
-    res.json({ error: "error" });
-  }
+handler.post(function (req, res) {
+  console.log(req.body.csrfToken);
+  res.json(req.body);
 });
 
-handler.put(parseForm, csrfProtection, async function (req, res) {
-  const connection = await db
-    .select()
-    .from("user_details")
-    .where("username", req.session?.passport?.user?.username)
-    .andWhere("company_name", req?.query?.co_name);
-  if (connection.length > 0) {
-    const result = await db
-      .select()
-      .from("user_details")
-      .where("username", req.session?.passport?.user?.username)
-      .andWhere("company_name", req?.query?.co_name)
-      .del();
-    res.json(result);
-  } else {
-    res.json({ error: "You are already connected" });
-  }
+handler.put(function (req, res) {
+  res.json(req.body);
 });
 
 export default handler;

@@ -3,26 +3,31 @@ import NextImage from "next/image";
 import React, { useState } from "react";
 import { AiOutlineCloudUpload } from "react-icons/ai";
 const slugify = require("slugify");
-import { setup } from '../../lib/csrf';
+import { setup } from "../../lib/csrf";
+import { useRouter } from "next/router";
+import { ToastContainer, toast } from "react-toastify";
 
 function CreateCommunity(props) {
   const [file, setFile] = useState();
   const [isOpen, setIsOpen] = useState(false);
   const [error, setError] = useState("");
   const [up, setUp] = useState(true);
-  const [ufile ,setUFile] = useState();
+  const [ufile, setUFile] = useState();
+  const router = useRouter();
+
   // console.log(props?.props);
   // Form Element
   const [img, setImage] = useState("");
   const [coName, setCoName] = useState("");
   const [description, setDescription] = useState("");
   const [option, setOption] = useState("");
+  const [errorName, setErrorName] = useState("");
 
   function handleChange(e) {
     setIsOpen(true);
-    console.log(e.target.files);
-    setFile(URL.createObjectURL(e.target.files[0]));
-    setUFile(e.target.files[0]);
+    // console.log(e.target.files);
+    setFile(URL?.createObjectURL(e.target.files[0]));
+    setUFile(e?.target?.files[0]);
     const image = new Image();
     image.src = URL.createObjectURL(e.target.files[0]);
     image.onload = () => {
@@ -46,41 +51,85 @@ function CreateCommunity(props) {
 
   async function submitForm(e) {
     e.preventDefault();
-    const company_slug = slugify(coName.toLowerCase());
-    // console.log(img, coName, company_slug, description, option);
-    const formData = { 
-      name:coName,
-      description:description,
-      image:ufile,
-      company_slug:company_slug,
-      option:option,
-      _csrf:props?.props?.data,
-    }   
+
+    // const formData = {
+    //   name: coName,
+    //   description: description,
+    //   image: ufile,
+    //   company_slug: company_slug,
+    //   option: option,
+    // };
     // const formData = new FormData();
     // formData.append("name", coName);
     // formData.append("description", description);
     // formData.append("image", ufile);
     // formData.append("company_slug", company_slug);
     // formData.append("option", option);
+
+    // console.log(
+    //   "formdata",
+    //   coName,
+    //   description,
+    //   ufile,
+    //   company_slug,
+    //   option,
+    //   formData
+    // );
     // formData.append("_csrf",  props?.props?.data,);
 
     try {
-      const result = await axios.post(
-        `/api/create`,
-        formData,
+      console.log(props?.props?.api_url);
+      const res = await axios.get(
+        `${props?.props?.api_url}/c/${router.query?.co_name}`,
         {
           withCredentials: true,
-          headers: {
-            Accept: "application/json",
-            "Content-Type":"multipart/form-data",
-            "xsrf-token": props?.props?.csrf,
-          },
         }
       );
 
-      console.log(result.data);
+      console.log(res.data?.csrfToken);
+
+      if (up) {
+        const company_slug = slugify(e.target.name.value.toLowerCase());
+        console.log(company_slug);
+        const result = await axios.post(
+          `${props?.props?.api_url}/c/create`,
+          {
+            company_name: e.target.name.value,
+            company_slug: slugify(e.target.name.value.toLowerCase()),
+            description: e.target.description.value,
+            ufile: ufile,
+            option: e.target.option.value,
+            created_by:
+              props?.props?.data?.session?.passport?.user?.username || null,
+            csrfToken: res.data?.csrfToken,
+          },
+          {
+            withCredentials: true,
+            headers: {
+              "Content-Type": "multipart/form-data",
+              "x-csrf-token": props?.props?.csrfForHeader,
+            },
+          }
+        );
+        if (result.data && result.status == 200) {
+          console.log(result);
+
+          toast.success("Community was created successfully!", {
+            position: "top-right",
+            autoClose: 5000,
+            hideProgressBar: false,
+            closeOnClick: true,
+            pauseOnHover: true,
+            draggable: true,
+            progress: undefined,
+            theme: "dark",
+          });
+        }
+      }
     } catch (error) {
       console.log(error);
+      setError(error?.response?.data?.error);
+      setErrorName(error?.response?.data?.errorName);
     }
   }
 
@@ -95,7 +144,7 @@ function CreateCommunity(props) {
       >
         <div className="relative w-full max-w-2xl max-h-full">
           {/* <!-- Modal content --> */}
-          <div className="relative bg-white rounded-lg shadow dark:bg-gray-700">
+          <div className="relative bg-white rounded-lg shadow dark:bg-zinc-800">
             {/* <!-- Modal header --> */}
             <div className="flex items-start justify-between p-4 border-b rounded-t dark:border-gray-700">
               <h3 className="text-xl font-semibold text-gray-900 dark:text-white">
@@ -133,6 +182,7 @@ function CreateCommunity(props) {
                 onSubmit={(e) => {
                   submitForm(e);
                 }}
+                // encType="multipart/form-data"
               >
                 <div className="mb-6">
                   <label
@@ -171,20 +221,25 @@ function CreateCommunity(props) {
                 </div>
 
                 <div className="mb-6">
-                  <label
-                    htmlFor="name"
-                    className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
-                  >
-                    Name
-                  </label>
+                  <div className="flex justify-between">
+                    <label
+                      htmlFor="name"
+                      className="block mb-2 text-sm font-medium text-gray-900 dark:text-white"
+                    >
+                      Name
+                    </label>
+                    <p className="text-red-700 text-center">{errorName}</p>
+                  </div>
+
                   <input
                     type="name"
                     id="name"
                     name="name"
                     onChange={(e) => {
+                      console.log(e.target.value);
                       setCoName(e.target.value);
                     }}
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
+                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-transparent dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
                     placeholder="Name of you community here "
                     required
                   />
@@ -204,8 +259,8 @@ function CreateCommunity(props) {
                       setDescription(e.target.value);
                     }}
                     placeholder="Write here community description"
-                    className="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500"
-                    cols={10}
+                    className="bg-gray-50 border h-[83px] border-gray-300 text-gray-900 text-sm rounded-lg focus:ring-white focus:border-white block w-full p-2.5 dark:bg-transparent dark:border-gray-600 dark:placeholder-gray-400 dark:text-white  dark:focus:border-white"
+                    cols={5}
                     rows={10}
                     required
                   />
@@ -216,25 +271,22 @@ function CreateCommunity(props) {
                     onChange={(e) => {
                       setOption(e.target.value);
                     }}
-                    className="block mb-2 text-sm bg-slate-600 font-medium text-gray-900 dark:text-white"
+                    className="block mb-2 text-sm bg-transparent font-medium text-gray-900 dark:text-white"
                   >
                     <option value="polygon">Polygon Mainnet</option>
                     <option value="ethereum">Ethereum Mainnet</option>
                   </select>
                 </div>
+                <button
+                  // onClick={(e) => {
+                  //   submitForm(e);
+                  // }}
+                  type="submit"
+                  className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                >
+                  Submit
+                </button>
               </form>
-            </div>
-            {/* <!-- Modal footer --> */}
-            <div className="flex items-center p-6 space-x-2 border-t border-gray-200 rounded-b dark:border-gray-600">
-              <button
-                onClick={(e) => {
-                  submitForm(e);
-                }}
-                type="submit"
-                className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
-              >
-                Submit
-              </button>
             </div>
           </div>
         </div>

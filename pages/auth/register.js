@@ -1,5 +1,5 @@
 import axios from "axios";
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useCsrf } from "@/lib/csrf";
 import { getCookie, setCookie } from "cookies-next";
 import styles from "../../styles/register.module.css";
@@ -29,67 +29,83 @@ function Register(props) {
   const [sig, setSig] = useState("");
   const [address, setAddress] = useState("");
   const [err, setError] = useState("");
-  const router = useRouter()
+  const router = useRouter();
 
-  async function submitForm(e) {
+  const [token, setToken] = useState();
+
+  useEffect(() => {
+    setToken(props?.csrfTokenForBody);
+  }, []);
+
+  async function submitBtn(e, retryCount = 0) {
     e.preventDefault();
+
     try {
-      const result = await axios.post(
-        "/api/auth/register",
+      const res = await axios.get(`${props.api_url}/auth/register`, {
+        withCredentials: true,
+      });
+      console.log(res.data);
+      setToken(res.data?.csrf);
+
+      console.log(res.data?.csrfToken);
+      const response = await axios.post(
+        `${props.api_url}/auth/register`,
         {
           username: e.target.username.value,
           password: e.target.password.value,
           firstname: e.target.firstname.value,
           lastname: e.target.lastname.value,
           email: e.target.email.value,
-          _csrf: props?.data,
-          type: e.target.type.value,
           sig: sig,
           hash: props?.message_key,
           address: address || "",
           fromSig: fromSig,
+          csrfToken: token,
         },
         {
           withCredentials: true,
           headers: {
-            Accept: "application/json",
             "Content-Type": "application/json",
-            "xsrf-token": props?.csrf,
+            "x-csrf-token": props?.csrfTokenForHeader,
+            origin: `${props?.api_url}`,
           },
         }
-      ); 
-      router.push("/")
-      console.log(result?.data?.message);
-      setErrors("")
-      if ( result?.data?.message?.isAuth) {
-        console.log(true);
-      }else{
-        // setMsg(result.data)
+      );
+
+      // console.log(response.data);
+      if (response.data.statusCode === 200) {
+        router.push("/");
       }
     } catch (error) {
-      setError(
-        error?.response?.request?.response
-          ?.split(":")[1]
-          ?.split("}")[0]
-          ?.split('"')[1]
-      );
+      if (error?.response?.status == 500) {
+        setError(
+          error?.response?.request?.response
+            ?.split(":")[1]
+            ?.split("}")[0]
+            ?.split('"')[1]
+        );
+      }
     }
   }
 
   async function submitWeb3Form(e) {
     e.preventDefault();
-    
+
     try {
+      const res = await axios.get(`${props.api_url}/auth/register`, {
+        withCredentials: true,
+      });
+      setToken(res.data?.csrf);
+      console.log(res.data?.csrf);
       const result = await axios.post(
-        "/api/auth/register",
+        `${props?.api_url}/auth/register`,
         {
           username: e.target.username.value,
           password: "",
           firstname: e.target.firstname.value,
           lastname: e.target.lastname.value,
           email: e.target.email.value,
-          _csrf: props?.data,
-          type: e.target.type.value,
+          csrfToken: token,
           sig: sig,
           hash: props?.message_key,
           address: address || "",
@@ -98,33 +114,31 @@ function Register(props) {
         {
           withCredentials: true,
           headers: {
-            Accept: "application/json",
             "Content-Type": "application/json",
-            "xsrf-token": props?.csrf,
+            "x-csrf-token": props?.csrfTokenForHeader,
+            origin: `${props?.api_url}`,
           },
         }
       );
       console.log(result?.data);
       if (result?.data?.message?.isAuth) {
-        router.push("/")
-      }else{
-        
+        // router.push("/");
+      } else {
       }
       // setMsg(result.data);
-      setError("")
+      setError("");
     } catch (error) {
-      console.log(error);
-      setError(
-        error?.response?.request?.response
-          ?.split(":")[1]
-          ?.split("}")[0]
-          ?.split('"')[1]
-      );
+      // console.log(error);
+      if (error?.response?.status == 500) {
+        setError(
+          error?.response?.request?.response
+            ?.split(":")[1]
+            ?.split("}")[0]
+            ?.split('"')[1]
+        );
+      }
     }
-    
   }
-
-  
 
   const apiKey = process.env.NEXT_PUBLIC_API_KEY;
   const sec_key = props;
@@ -204,7 +218,7 @@ function Register(props) {
           <div style={show ? { dispaly: "block" } : { display: "none" }}>
             <form
               onSubmit={(e) => {
-                fromSig ? submitWeb3Form(e) : submitForm(e);
+                fromSig ? submitWeb3Form(e) : submitBtn(e);
               }}
             >
               <br />
@@ -283,34 +297,6 @@ function Register(props) {
               <br />
               <input type="hidden" name="_csrf" value={props.csrf} />
               <p className={"text-white float-left"}>Your motive</p>
-              <br />
-              <div className={styles.radioGr}>
-                <input
-                  type="radio"
-                  name="type"
-                  className={styles.inputRd}
-                  value={"company"}
-                  id="company"
-                  required
-                />
-                <label htmlFor="company" className={`${styles.label}`}>
-                  Company
-                </label>
-
-                <input
-                  type="radio"
-                  name="type"
-                  className={styles.inputRd}
-                  value={"user"}
-                  checked="checked"
-                  onChange={() => setChecked((state) => !state)}
-                  id="user"
-                  required
-                />
-                <label htmlFor="user" className={`${styles.label}`}>
-                  User
-                </label>
-              </div>
 
               <br />
               <button
@@ -332,12 +318,12 @@ function Register(props) {
 export default Register;
 
 export const getServerSideProps = async ({ req, res }) => {
-  const t = getCookie("_csrf", { req, res });
+  const t = getCookie("uniqueId", { req, res });
   const meta_key = await getHash();
   console.log(meta_key);
   const ck = t?.length || 0;
   if (ck == 0) {
-    setCookie("_csrf", uuid(), {
+    setCookie("uniqueId", uuid(), {
       req,
       res,
       httpOnly: true,
@@ -349,31 +335,32 @@ export const getServerSideProps = async ({ req, res }) => {
     console.log("cookie set");
   }
   try {
-    const check = process.env.NODE_ENV == "development";
-    const test = await axios.get(
-      check
-        ? `${req.headers["x-forwarded-proto"]}://${req.headers.host}/api/auth/register`
-        : `${process.env.WEB_URL}/api/auth/register`,
-      {
-        withCredentials: true,
-        headers: {
-          Cookie: req.headers.cookie,
-        },
-      }
-    );
-    console.log(`${test.data?.csrf},${getCookie("_csrf", { req, res })}`);
+    const test_data = await axios({
+      url: `${process.env.WEB_URL}/auth/register`,
+      method: "get",
+      withCredentials: true,
+      headers: {
+        "Access-Control-Allow-Origin": "true",
+        origin: "http://localhost:3000",
+        Cookie: req.headers.cookie,
+      },
+    });
+
     return {
       props: {
         message_key: meta_key || null,
-        data: test?.data.csrf || null,
-        all: test?.data?.session || null,
-        csrf: getCookie("_csrf", { req, res }) || {},
+        csrfTokenForBody: test_data?.data.csrf || null,
+        all: test_data?.data?.session || null,
+        csrfTokenForHeader: getCookie("uniqueId", { req, res }) || {},
+        api_url: process.env.WEB_URL,
       },
     };
   } catch (error) {
     console.log(error);
     return {
-      props: {},
+      props: {
+        api_url: process.env.WEB_URL,
+      },
     };
   }
 };

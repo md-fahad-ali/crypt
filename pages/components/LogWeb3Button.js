@@ -7,13 +7,19 @@ import axios from "axios";
 import { useRouter } from "next/router";
 
 function LogWeb3Button(props) {
+  // console.log(props);
+
   const { connector: activeConnector, isConnected, address } = useAccount();
   const [web3, setWeb3] = useState(null);
   const [connected, setConnected] = useState(isConnected);
   const [sig, setSig] = useState(true);
   const [error, setError] = useState();
-  
-  const router = useRouter()
+
+  const router = useRouter();
+
+  useEffect(() => {
+    props?.setCsrfToken(props.csrfToken);
+  }, []);
 
   const {
     data,
@@ -34,21 +40,16 @@ function LogWeb3Button(props) {
     providerOptions: {},
   });
 
-
-  const { disconnect } = useDisconnect()
-  
- 
+  const { disconnect } = useDisconnect();
 
   useEffect(() => {
-    
-    
-    disconnect();  
+    disconnect();
     return () => {
-      disconnect()
-    }
-  }, [disconnect])
-  
-  // console.log(props?.lock_key);
+      disconnect();
+    };
+  }, [disconnect]);
+
+  // console.log(props?.lock_key?.message_key);
 
   const connectToWallet = async (e) => {
     e.preventDefault();
@@ -65,7 +66,55 @@ function LogWeb3Button(props) {
     }
   };
 
-  console.log(props?.lock_key?.message_key);
+  async function submitBtn(signature, fromAddress, retryCount = 0) {
+    try {
+      const res = await axios.get(`${props.api_url}/auth/login`, {
+        withCredentials: true,
+      });
+      props?.setCsrfToken(res.data?.csrfToken);
+
+      const response = await axios.post(
+        `${props.api_url}/auth/login/web3`,
+        {
+          sig: signature,
+          hash: props?.lock_key?.message_key,
+          address: fromAddress,
+          fromSig: props?.fromSig,
+          csrfToken: props?.csrfToken,
+        },
+        {
+          withCredentials: true,
+          headers: {
+            "Content-Type": "application/json",
+            "x-csrf-token": props?.csrfTokenForHeader,
+            origin: "http://localhost:3000",
+          },
+        }
+      );
+      const { data } = response;
+      console.log("Response Data:", data);
+      console.log(response?.status);
+      if (data.isAuth) {
+      router.push("/")
+      }
+      if (response?.status === 200) {
+        // console.log(`new Token: ${data.csrfToken}`);
+        props?.setCsrfToken(data.csrfToken);
+        
+      }
+    } catch (error) {
+      console.log("Error:", error);
+      // If CSRF token validation failed, get a new token and reattempt
+      if (error?.response?.status != 403) {
+        setError(
+          error?.response?.request?.response
+            ?.split(":")[1]
+            ?.split("}")[0]
+            ?.split('"')[1]
+        );
+      }
+    }
+  }
 
   const signMessage = async () => {
     try {
@@ -75,7 +124,7 @@ function LogWeb3Button(props) {
         await window.ethereum.enable();
         const accounts = await web3.eth.getAccounts();
         if (accounts.length === 0) {
-          setError("No account found in MetaMask.");
+          props.setError("No account found in MetaMask.");
           return;
         }
         const fromAddress = accounts[0];
@@ -85,69 +134,24 @@ function LogWeb3Button(props) {
           ""
         );
 
-        // try {
-        //   const result = await axios.post(
-        //     "/api/auth/metamask/register",
-        //     {
-        //       address: fromAddress,
-        //       sig: signature,
-        //       _csrf: props?.lock_key?.data,
-        //       hash: props?.lock_key?.message_key,
-        //     },
-        //     {
-        //       withCredentials: true,
-        //       headers: {
-        //         Accept: "application/json",
-        //         "Content-Type": "application/json",
-        //         "xsrf-token": props?.lock_key?.csrf,
-        //       },
-        //     }
-        //   );
-        //   console.log("From server");
-        //   console.info(result.data);
-
-        // } catch (error) {
-        //   console.log(error);
-        // }
-
-        try {
-          const result = await axios.post(
-            "/api/auth/login",
-            {
-              _csrf: props?.lock_key?.data,
-              sig: signature,
-              hash: props?.lock_key?.message_key,
-              address: fromAddress,
-              fromSig: props?.fromSig,
-            },
-            {
-              withCredentials: true,
-              headers: {
-                Accept: "application/json",
-                "Content-Type": "application/json",
-                "xsrf-token": props?.lock_key?.csrf,
-              },
-            }
-          );
-          props?.setError("");
-          if (result?.data?.isAuth) {
-            router.push("/");
-          } else {
-            // setMsg(result.data);
-          }
-          console.log(result.data);
-        } catch (error) {
-          console.log(error);
-        }
+        let retryCount = 0;
+        console.log(signature, fromAddress, message);
+        submitBtn(signature, fromAddress, retryCount);
 
         console.log("amake deka jasse");
       } else {
-        setError("Please install MetaMask to sign messages.");
+        props.setError("Please install MetaMask to sign messages.");
       }
     } catch (error) {
-      props?.setError(error?.response?.request?.response?.split(":")[1]?.split("}")[0]?.split('"')[1]);
-      setError("Error while signing the message.");
-      console.error(error);
+      console.log(error);
+      console.error(error?.response?.data);
+      props?.setError(
+        error?.response?.request?.response
+          ?.split(":")[1]
+          ?.split("}")[0]
+          ?.split('"')[1]
+      );
+      props.setError("Error while signing the message.");
     }
   };
 

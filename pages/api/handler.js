@@ -1,4 +1,3 @@
-import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import nc from "next-connect";
 import knex from "./db";

@@ -20,82 +20,72 @@ import { uuid } from "uuidv4";
 import Web3Button from "../components/Web3Button";
 import LogWeb3Button from "../components/LogWeb3Button";
 import { useRouter } from "next/router";
+import Link from "next/link";
 
 function Login(props) {
   // console.log(props);
+
   const [checked, setChecked] = React.useState(true);
   const [msg, setMsg] = useState();
   const [show, setShow] = useState(false);
   const [fromSig, setFromSig] = useState(false);
   const [sig, setSig] = useState("");
   const [address, setAddress] = useState("");
-  const [error,setError] = useState("");
-  const router = useRouter()
+  const [error, setError] = useState("");
+  const router = useRouter();
 
-  async function submitForm(e) {
+  const [csrfToken, setCsrfToken] = useState(props?.test_data?.csrfToken);
+  console.log("csrf", props?.test_data?.csrfToken);
+
+  async function submitBtn(e, retryCount = 0) {
     e.preventDefault();
+
+    const res = await axios.get(`${props.api_url}/auth/login`, {
+      withCredentials: true,
+    });
+    setCsrfToken(res.data?.csrfToken);
+
+    // console.log(props?.test_data?.csrfToken);
     try {
-      const result = await axios.post(
-        "/api/auth/login",
+      const { data } = await axios.post(
+        `${props.api_url}/auth/login/web1`,
         {
           email: e.target.email.value,
           password: e.target.password.value,
-          _csrf: props?.data,
-          fromSig: fromSig,
+          csrfToken: csrfToken,
         },
         {
           withCredentials: true,
           headers: {
-            Accept: "application/json",
             "Content-Type": "application/json",
-            "xsrf-token": props?.csrf,
+            "x-csrf-token": props?.csrfToken,
+            origin: "http://localhost:3000",
           },
         }
       );
-      setError("");
-      if (result?.data?.isAuth) {
+
+      console.log("Response Data:", data);
+      if (data.isAuth) {
+        
+        setCsrfToken(data.csrfToken);
         router.push("/")
-      }else{
-        // setMsg(result.data)
       }
-      console.log(result.data);
     } catch (error) {
-      console.log(error);
-      // setError(error?.response?.request?.response?.split(":")[1]?.split("}")[0]?.split('"')[1]);
+      console.log("Error:", error);
+      // If CSRF token validation failed, get a new token and reattempt
+      if (error?.response?.status != 403) {
+        setError(
+          error?.response?.request?.response
+            ?.split(":")[1]
+            ?.split("}")[0]
+            ?.split('"')[1]
+        );
+      }
     }
   }
 
-  // async function submitWeb3Form(e) {
-  //   e.preventDefault();
-  //   try {
-  //     const result = await axios.post(
-  //       "/api/auth/login",
-  //       {
-  //         _csrf: props?.data,
-  //         type: e.target.type.value,
-  //         sig: sig,
-  //         hash: props?.message_key,
-  //         address: address,
-  //       },
-  //       {
-  //         withCredentials: true,
-  //         headers: {
-  //           Accept: "application/json",
-  //           "Content-Type": "application/json",
-  //           "xsrf-token": props?.csrf,
-  //         },
-  //       }
-  //     );
-  //     // setMsg(result.data);
-  //     console.log(result.data);
-  //   } catch (error) {
-  //     // console.log(error);
-  //   }
-  // }
-
-  //Config of WalletConnect
   const apiKey = process.env.NEXT_PUBLIC_API_KEY;
-  const sec_key = props;
+  const sec_key = props || null;
 
   const chains = [arbitrum, mainnet, polygon];
   const projectId = apiKey;
@@ -110,8 +100,6 @@ function Login(props) {
   });
 
   const ethereumClient = new EthereumClient(wagmiConfig, chains);
-
-  
 
   return (
     <div className={styles.formBd}>
@@ -135,17 +123,21 @@ function Login(props) {
         >
           Sign In
         </h1>
-        {/* <br/><p className={"text-red-600"}>{error}</p> */}
+        <br />
+        <p className={"text-red-600"}>{error}</p>
         {!show ? (
           <div>
             <form>
-              
-                <LogWeb3Button
-                  lock_key={sec_key}
-                  fromSig={true}
-                  setError={setError}
-                />
-             
+              <LogWeb3Button
+                lock_key={sec_key}
+                fromSig={true}
+                csrfTokenForHeader={props?.csrfToken}
+                setError={setError}
+                setCsrfToken={setCsrfToken}
+                csrfToken={csrfToken}
+                api_url={props?.api_url}
+              />
+
               {/* <Web3Modal
                 projectId={projectId}
                 themeVariables={{
@@ -180,7 +172,7 @@ function Login(props) {
           <div style={show ? { dispaly: "block" } : { display: "none" }}>
             <form
               onSubmit={(e) => {
-                fromSig ? submitWeb3Form(e) : submitForm(e);
+                fromSig ? submitWeb3Form(e) : submitBtn(e);
               }}
             >
               <br />
@@ -225,6 +217,14 @@ function Login(props) {
         ) : (
           ""
         )}
+
+        <br />
+        <div className="flex justify-between gap-2">
+          <h1 className="text-white">I have no account</h1>
+          <Link className="text-white underline" href={"/auth/register"}>
+            Create account
+          </Link>
+        </div>
       </div>
     </div>
   );
@@ -233,12 +233,15 @@ function Login(props) {
 export default Login;
 
 export const getServerSideProps = async ({ req, res }) => {
-  const t = getCookie("_csrf", { req, res });
-  const meta_key = await getHash();
+  const t = getCookie("uniqueId", { req, res });
+  const meta_key = (await getHash()) || null;
   // console.log(meta_key);
+
+  const csrfTokenHash = uuid();
+
   const ck = t?.length || 0;
   if (ck == 0) {
-    setCookie("_csrf", uuid(), {
+    setCookie("uniqueId", csrfTokenHash, {
       req,
       res,
       httpOnly: true,
@@ -249,32 +252,65 @@ export const getServerSideProps = async ({ req, res }) => {
     });
     console.log("cookie set");
   }
+
   try {
-    const check = process.env.NODE_ENV == "development";
-    const test = await axios.get(
-      check
-        ? `${req.headers["x-forwarded-proto"]}://${req.headers.host}/api/auth/login`
-        : `${process.env.WEB_URL}/api/auth/login`,
-      {
-        withCredentials: true,
-        headers: {
-          Cookie: req.headers.cookie,
-        },
-      }
-    );
-    // console.log(test.data);
+    const test_data = await axios({
+      url: `${process.env.WEB_URL}/auth/login`,
+      method: "get",
+      withCredentials: true,
+      headers: {
+        "Access-Control-Allow-Origin": "true",
+        origin: "http://localhost:3000",
+        Cookie: req.headers.cookie,
+      },
+    });
+
+    console.log("Received in getServerSideProps:", test_data.data);
+    const token = getCookie("uniqueId", { req, res }) || {};
+
     return {
       props: {
+        api_url: process.env.WEB_URL,
+        test_data: test_data.data,
+        csrfToken: token,
+        all: test_data?.data?.session || null,
         message_key: meta_key || null,
-        data: test?.data.csrf || null,
-        all: test?.data?.session || null,
-        csrf: getCookie("_csrf", { req, res }) || {},
       },
     };
   } catch (error) {
     console.log(error);
     return {
-      props: {},
+      props: {
+        api_url: process.env.WEB_URL,
+      },
     };
   }
 };
+
+// try {
+//   const test = await axios({
+//     method: "get",
+//     url: `${process.env.WEB_URL}/auth/login`,
+//     headers: {
+//       "Access-Control-Allow-Origin": "true",
+//       origin: "http://localhost:3000",
+//     },
+//     withCredentials: true,
+//   });
+//   console.log(test.data);
+//   return {
+//     props: {
+//       data: test?.data.csrf || null,
+//       all: test?.data?.session || null,
+//       csrf: getCookie("csrf-token", { req, res }) || {},
+//       api_url: process.env.WEB_URL,
+//     },
+//   };
+// } catch (error) {
+//   console.log(error);
+//   return {
+//     props: {
+//       api_url: process.env.WEB_URL,
+//     },
+//   };
+// }
